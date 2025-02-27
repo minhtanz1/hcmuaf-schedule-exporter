@@ -368,7 +368,7 @@ app.post(`/api/generate-ics/exam`,  (req, res) => {
     let icsContent = calendar.toString();
     // console.log(icsContent, res)
     res.set('Content-Type', 'text/calendar');
-    res.set('Content-Disposition', 'attachment; filename=tkb_exported.ics');
+    res.set('Content-Disposition', 'attachment; filename=exam_exported.ics');
     return res.send(icsContent);
   } catch ( error ) {
     console.error('ICS generation error:', error.message);
