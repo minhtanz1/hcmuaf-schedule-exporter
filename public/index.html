@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HCMUAF Schedule Exporter</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" type="text/css" href="/styles.css">
+</head>
+
+<body>
+  <div class="container mt-5">
+    <h1 class="text-center mb-4">Chuyển TKB từ trang đkmh sang Google Calendar</h1>
+
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <!-- Step 1: Login Form -->
+        <div id="step1" class="step active">
+          <h3>Bước 1: Đăng nhập vào HCMUAFHCMUAF</h3>
+          <form id="loginForm">
+            <div class="mb-3">
+              <label for="username" class="form-label">Mã số sinh viên</label>
+              <input type="text" class="form-control" id="username" required>
+            </div>
+            <div class="mb-3">
+              <label for="password" class="form-label">Mật khẩukhẩu</label>
+              <input type="password" class="form-control" id="password" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Đăng nhập</button>
+          </form>
+        </div>
+
+        <!-- Step 2: Choose Semester -->
+        <div id="step2" class="step">
+          <h3>Bước 2: Chọn học kì</h3>
+          <form id="semesterForm">
+            <div class="mb-3">
+              <label for="semester" class="form-label">Chọn học kì</label>
+              <select class="form-select" id="semester" required>
+                <option value="" disabled selected>Đang tải học kì...</option>
+              </select>
+              <div class="form-text">Chọn học kì mà bạn muốn chuyển sang Google Calendar</div>
+            </div>
+            <button type="submit" class="btn btn-primary">Lấy TKB</button>
+          </form>
+        </div>
+
+        <!-- Step 3: Download Calendar -->
+        <div id="step3" class="step">
+          <h3>Bước 3: Đưa TKB vào Google Calendar</h3>
+          <p>Thời khóa biểubiểu của bạn đã được lấy thành công!</p>
+          <div class="action-buttons">
+            <button id="downloadBtn" class="btn btn-success">
+              <i class="bi bi-download"></i> Tải file Ics
+            </button>
+            <button id="importGoogleBtn" class="btn btn-google">
+              <i class="bi bi-google"></i> Thêm vào Google Calendar
+            </button>
+          </div>
+          <div class="mt-3">
+            <button id="startOverBtn" class="btn btn-outline-secondary">Bắt đầu lại</button>
+          </div>
+        </div>
+        <!-- Google Calendar Import Instructions -->
+        <div id="googleCalendarInstructions" class="step instructions-panel">
+          <h4>Làm thế nào để nhập lịch vào Google Calendar</h4>
+          <ol class="instructions-list">
+            <li>Vào trang tạo lịch hoặc nhấn "Thêm vào Google Calendar ở phía trên"</li>
+            <li>Tạo một lịch mới có tên bất kỳkỳ trên trang đã mở</li>
+            <li>Sau khi tạo xong, nhấp vào "Nhập & Xuất" (Import & Export) ở menu bên trái</li>
+            <li>Nhấp vào "Chọn tệp từ máy tính của bạn" và chọn tệp ICS bạn đã tải xuống</li>
+            <li>Chọn lịch mà bạn vừa đặt ở bước 2 từ danh sách thả xuống</li>
+            <li>Chọn Nhập để hoàn thành</li>
+          </ol>
+          <button id="hideInstructionsBtn" class="btn btn-outline-secondary btn-sm mt-2">Ẩn hướng dẫn</button>
+        </div>
+
+        <!-- Loading Indicator -->
+        <div id="loading" class="loading">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Đang tải...</span>
+          </div>
+          <p class="mt-2" id="loadingText">Đang xử lí...</p>
+        </div>
+
+        <!-- Error Display -->
+        <div id="error" class="alert alert-danger mt-3" style="display: none;"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Global variables
+    let accessToken = '';
+    // let scheduleData = null;
+    let calendarEvents = [];
+
+    // DOM Elements
+    const step1 = document.getElementById('step1');
+    const step2 = document.getElementById('step2');
+    const step3 = document.getElementById('step3');
+    const loginForm = document.getElementById('loginForm');
+    const semesterForm = document.getElementById('semesterForm');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const importGoogleBtn = document.getElementById('importGoogleBtn');
+    const startOverBtn = document.getElementById('startOverBtn');
+    const loading = document.getElementById('loading');
+    const loadingText = document.getElementById('loadingText');
+    const errorEl = document.getElementById('error');
+
+    // Helper functions
+    function showStep(step) {
+      // Hide all steps
+      [step1, step2, step3].forEach(el => {
+        el.classList.remove('active');
+      });
+      // Show requested step
+      step.classList.add('active');
+    }
+
+    function showLoading(message = 'Processing...') {
+      loading.style.display = 'block';
+      loadingText.textContent = message;
+    }
+
+    function hideLoading() {
+      loading.style.display = 'none';
+    }
+
+    function showError(message) {
+      errorEl.textContent = message;
+      errorEl.style.display = 'block';
+    }
+
+    function hideError() {
+      errorEl.style.display = 'none';
+    }
+    async function fetchSemesters() {
+      hideError();
+      showLoading('Đang tìm kiếm các học kỳ có sẵn...');
+
+      try {
+        const response = await fetch('/api/fetch-semesters', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          // body: JSON.stringify({ access_token: accessToken })
+          body: JSON.stringify({})
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+          throw new Error(data.message || 'Không thể lấy học kỳ');
+        }
+
+        const semesterSelect = document.getElementById('semester');
+        semesterSelect.innerHTML = ''; // Clear loading option
+
+        if (data.data && data.data.ds_hoc_ky && data.data.ds_hoc_ky.length > 0) {
+          // Add options for each semester
+          data.data.ds_hoc_ky.forEach(semester => {
+            const option = document.createElement('option');
+            option.value = semester.hoc_ky;
+            option.textContent = semester.ten_hoc_ky;
+            semesterSelect.appendChild(option);
+          });
+        } else {
+          // If no semesters found
+          const option = document.createElement('option');
+          option.value = "";
+          option.textContent = "Không có học kỳ nào có sẵn";
+          option.disabled = true;
+          option.selected = true;
+          semesterSelect.appendChild(option);
+        }
+
+        hideLoading();
+      } catch (error) {
+        console.error('Lỗi tìm nạp học kỳ:', error);
+        hideLoading();
+        showError(error.message || 'Đã xảy ra lỗi khi tải học kỳ');
+
+        // Add a default option if fetch fails
+        const semesterSelect = document.getElementById('semester');
+        semesterSelect.innerHTML = ''; // Clear loading option
+        const option = document.createElement('option');
+        option.value = "00000";
+        option.textContent = "Chọn học kì";
+        semesterSelect.appendChild(option);
+      }
+    }
+    // Parse ICS to get events for Google Calendar
+    function parseEventsFromIcs(icsContent) {
+      const events = [];
+      const lines = icsContent.split('\n');
+      let currentEvent = null;
+
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+
+        if (line === 'BEGIN:VEVENT') {
+          currentEvent = {};
+        } else if (line === 'END:VEVENT' && currentEvent) {
+          events.push(currentEvent);
+          currentEvent = null;
+        } else if (currentEvent) {
+          // Parse event properties
+          if (line.startsWith('SUMMARY:')) {
+            currentEvent.summary = line.substring(8);
+          } else if (line.startsWith('DTSTART:')) {
+            currentEvent.start = formatGoogleCalendarDate(line.substring(8));
+          } else if (line.startsWith('DTEND:')) {
+            currentEvent.end = formatGoogleCalendarDate(line.substring(6));
+          } else if (line.startsWith('LOCATION:')) {
+            currentEvent.location = line.substring(9);
+          } else if (line.startsWith('DESCRIPTION:')) {
+            currentEvent.description = line.substring(12);
+          }
+        }
+      }
+
+      return events;
+    }
+
+    // Format date for Google Calendar URL
+    function formatGoogleCalendarDate(icsDate) {
+      // ICS date format: YYYYMMDDTHHMMSSZ
+      if (icsDate.length < 15) return '';
+
+      const year = icsDate.substring(0, 4);
+      const month = icsDate.substring(4, 6);
+      const day = icsDate.substring(6, 8);
+      const hour = icsDate.substring(9, 11);
+      const minute = icsDate.substring(11, 13);
+      const second = icsDate.substring(13, 15);
+
+      return `${year}${month}${day}T${hour}${minute}${second}`;
+    }
+
+    // Generate Google Calendar URL for a single event
+    function generateGoogleCalendarUrl(event) {
+      const baseUrl = 'https://calendar.google.com/calendar/render';
+      const action = 'TEMPLATE';
+
+      let url = `${baseUrl}?action=${action}`;
+      url += `&text=${encodeURIComponent(event.summary || 'Class')}`;
+
+      if (event.start) url += `&dates=${event.start}`;
+      if (event.end) url += `/${event.end}`;
+      if (event.location) url += `&location=${encodeURIComponent(event.location)}`;
+      if (event.description) url += `&details=${encodeURIComponent(event.description)}`;
+
+      return url;
+    }
+
+    // Create Google Calendar for all events
+    function addToGoogleCalendar(events) {
+      // Verify we have events
+      if (!events || events.length === 0) {
+        showError('Không có sự kiện nào để thêm vào lịch');
+        return;
+      }
+
+      // If too many events, we'll need a different approach
+      if (events.length > 10) {
+        // For many events, use the ICS file approach
+        createGoogleCalendarWithIcs();
+        return;
+      }
+
+      // For a small number of events, open them one by one
+      events.forEach((event, index) => {
+        // Add a small delay between openings to prevent popup blocking
+        setTimeout(() => {
+          window.open(generateGoogleCalendarUrl(event), '_blank');
+        }, index * 500);
+      });
+    }
+
+    // Create a new Google Calendar and import events via ICS
+    function createGoogleCalendarWithIcs() {
+      // Google Calendar import URL
+      const importUrl = 'https://calendar.google.com/calendar/u/0/r/settings/createcalendar';
+
+      // Open the calendar creation page
+      window.open(importUrl, '_blank');
+      
+      // Show instructions to user
+      // alert('To import your schedule:\n\n1. Create a new calendar named "Schedule" on the page that opened\n2. After creating, click on "Import & Export" on the left menu\n3. Click "Select file from your computer" and choose the ICS file you downloaded\n4. Select your "Schedule" calendar from the dropdown\n5. Click Import');
+    }
+
+    // Event handlers
+    loginForm.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      hideError();
+
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+
+      if (!username || !password) {
+        showError('Vui lòng nhập cả tên người dùng và mật khẩu');
+        return;
+      }
+
+      showLoading('Đang đăng nhập...');
+
+      try {
+        const response = await fetch('/api/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ username, password })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+          throw new Error(data.message || 'Đăng nhập không thành công. Vui lòng kiểm tra thông tin đăng nhập của bạn.');
+        }
+
+        //accessToken = data.access_token;
+        hideLoading();
+        await fetchSemesters();
+        showStep(step2);
+      } catch (error) {
+        console.error('Lỗi đăng nhập:', error);
+        hideLoading();
+        showError(error.message || 'Đã xảy ra lỗi trong quá trình đăng nhập');
+      }
+    });
+
+    semesterForm.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      hideError();
+
+      const semester = document.getElementById('semester').value;
+
+      if (!semester) {
+        showError('Vui lòng nhập mã học kỳ');
+        return;
+      }
+
+      showLoading('Đang lấy tkb...');
+
+      try {
+        const response = await fetch('/api/fetch-schedule', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ semester })
+          // body: JSON.stringify({ access_token: accessToken, semester })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+          throw new Error(data.message || 'Không thể lấy tkb');
+        }
+
+        scheduleData = data.data;
+        hideLoading();
+        showStep(step3);
+        document.getElementById('googleCalendarInstructions').style.display = 'block';
+      } catch (error) {
+        console.error('Lỗi tkb tìm nạp:', error);
+        hideLoading();
+        showError(error.message || 'Đã xảy ra lỗi khi lấy lịch trình');
+      }
+    });
+
+    downloadBtn.addEventListener('click', async function () {
+      hideError();
+
+      if (!scheduleData) {
+        showError('Không có dữ liệu lịch trình nào có sẵn');
+        return;
+      }
+
+      showLoading('Đang tạo tập tin lịch...');
+
+      try {
+        const response = await fetch('/api/generate-ics', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ scheduleData })
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Không tạo được tệp ICS');
+        }
+
+        // Get the blob from the response
+        const blob = await response.blob();
+
+        // Create a download link and trigger download
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = 'tkb_exported.ics';
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+
+        hideLoading();
+      } catch (error) {
+        console.error('Lỗi tạo ICS:', error);
+        hideLoading();
+        showError(error.message || 'Đã xảy ra lỗi khi tạo tệp lịch');
+      }
+    });
+
+    importGoogleBtn.addEventListener('click', async function () {
+      hideError();
+
+      if (!scheduleData) {
+        showError('Không có dữ liệu lịch trình nào có sẵn');
+        return;
+      }
+
+      showLoading('Đang chuẩn bị nhập Google Lịch...');
+
+      try {
+        // First, get the ICS content
+        const response = await fetch('/api/generate-ics', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ scheduleData })
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Không tạo được dữ liệu lịch');
+        }
+
+        // Get text content from the response
+        const icsContent = await response.text();
+
+        // Download the file first (required for import)
+        const blob = new Blob([icsContent], { type: 'text/calendar' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = 'tkb_exported.ics';
+        document.body.appendChild(a);
+        a.click();
+
+        // Parse the ICS content to get events
+        const events = parseEventsFromIcs(icsContent);
+
+        // Direct user to Google Calendar
+        createGoogleCalendarWithIcs();
+
+        hideLoading();
+      } catch (error) {
+        console.error('Lỗi nhập Google Lịch:', error);
+        hideLoading();
+        showError(error.message || 'Đã xảy ra lỗi khi chuẩn bị nhập Google Calendar');
+      }
+    });
+
+    startOverBtn.addEventListener('click', function () {
+      // Reset everything
+      //accessToken = '';
+      scheduleData = null;
+      calendarEvents = [];
+      document.getElementById('username').value = '';
+      document.getElementById('password').value = '';
+      document.getElementById('googleCalendarInstructions').style.display = 'none';
+      hideError();
+      showStep(step1);
+    });
+    document.getElementById('hideInstructionsBtn').addEventListener('click', function () {
+      document.getElementById('googleCalendarInstructions').style.display = 'none';
+    });
+  </script>
+</body>
+
+</html>
