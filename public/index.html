@@ -17,14 +17,14 @@
       <div class="card-body">
         <!-- Step 1: Login Form -->
         <div id="step1" class="step active">
-          <h3>Bước 1: Đăng nhập vào HCMUAFHCMUAF</h3>
+          <h3>Bước 1: Đăng nhập vào HCMUAF</h3>
           <form id="loginForm">
             <div class="mb-3">
               <label for="username" class="form-label">Mã số sinh viên</label>
               <input type="text" class="form-control" id="username" required>
             </div>
             <div class="mb-3">
-              <label for="password" class="form-label">Mật khẩukhẩu</label>
+              <label for="password" class="form-label">Mật khẩu</label>
               <input type="password" class="form-control" id="password" required>
             </div>
             <button type="submit" class="btn btn-primary">Đăng nhập</button>
@@ -108,7 +108,8 @@
     const loading = document.getElementById('loading');
     const loadingText = document.getElementById('loadingText');
     const errorEl = document.getElementById('error');
-
+    const baseUrl = `${window.location.protocol}//${window.location.host}`;
+    // console.log(baseUrl)
     // Helper functions
     function showStep(step) {
       // Hide all steps
@@ -119,7 +120,7 @@
       step.classList.add('active');
     }
 
-    function showLoading(message = 'Processing...') {
+    function showLoading(message = 'Đang xử lí...') {
       loading.style.display = 'block';
       loadingText.textContent = message;
     }
@@ -141,7 +142,7 @@
       showLoading('Đang tìm kiếm các học kỳ có sẵn...');
 
       try {
-        const response = await fetch('/api/fetch-semesters', {
+        const response = await fetch(`${baseUrl}/api/fetch-semesters`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -308,7 +309,7 @@
       showLoading('Đang đăng nhập...');
 
       try {
-        const response = await fetch('/api/login', {
+        const response = await fetch(`${baseUrl}/api/login`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -347,7 +348,7 @@
       showLoading('Đang lấy tkb...');
 
       try {
-        const response = await fetch('/api/fetch-schedule', {
+        const response = await fetch(`${baseUrl}/api/fetch-schedule`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -384,7 +385,7 @@
       showLoading('Đang tạo tập tin lịch...');
 
       try {
-        const response = await fetch('/api/generate-ics', {
+        const response = await fetch(`${baseUrl}/api/generate-ics`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -430,7 +431,7 @@
 
       try {
         // First, get the ICS content
-        const response = await fetch('/api/generate-ics', {
+        const response = await fetch(`${baseUrl}/api/generate-ics`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
