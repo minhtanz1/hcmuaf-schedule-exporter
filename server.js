@@ -14,14 +14,14 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const baseUrl = process.env.NODE_ENV === "production" ? "https://hcmuaf-schedule-exporter-1fwu1wnor-phamminhtan1122s-projects.vercel.app" : "http://localhost:3000";
-console.log(baseUrl)
+const baseUrl = process.env.NODE_ENV === "production" ? "https://hcmuaf-schedule-exporter.vercel.app" : "http://localhost:3000";
 // const baseUrl = process.env.BASE_URL
 // Middleware
 app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use(express.static('public'));
+app.use(express.static(path.join(__dirname, 'public')));
+// app.use(express.static('public'));
 app.use(session({
   secret: crypto.randomBytes(32).toString('hex'),
   resave: false,
@@ -30,7 +30,7 @@ app.use(session({
 }));
 // Routes
 app.get(`/`, (req, res) => {
-  res.sendFile(path.join(__dirname, '/public', 'index.html'));
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // Login endpoint
@@ -50,7 +50,7 @@ app.post(`/api/login`, async (req, res) => {
 
     if (response.data && response.data.access_token) {
       // Success - return token to client
-      // console.log(response)
+      console.log(response)
       req.session.access_token = response.data.access_token;
       return res.json({ success: true });
       // return res.json({ success: true, access_token: response.data.access_token });

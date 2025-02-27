@@ -4,7 +4,7 @@
     "description": "Export HCMUAF schedule to iCal format",
     "main": "server.js",
     "scripts": {
-        "start": "node server.js",
+        "start": "node server",
         "dev": "nodemon server.js",
         "build": "babel server.js --out-dir dist"
     },
@@ -16,7 +16,8 @@
         "dotenv": "^16.0.3",
         "express": "^4.18.2",
         "express-session": "^1.18.1",
-        "ical-generator": "^3.6.0"
+        "ical-generator": "^3.6.0",
+        "yarn": "^1.22.22"
     },
     "devDependencies": {
         "@babel/cli": "^7.26.4",
