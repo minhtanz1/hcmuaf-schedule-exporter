@@ -132,8 +132,8 @@
         </div>
         <!-- Step 3: Download Calendar -->
         <div id="step3" class="step">
-          <h3>Bước 3: Đưa TKB vào Google Calendar</h3>
-          <p>Thời khóa biểubiểu của bạn đã được lấy thành công!</p>
+          <h3>Bước 3: Đưa vào Google Calendar</h3>
+          <p id="step3Message"></p>
           <div class="action-buttons">
             <button id="downloadBtn" class="btn btn-success">
               <i class="bi bi-download"></i> Tải file Ics
@@ -146,32 +146,41 @@
             <button id="startOverBtn" class="btn btn-outline-secondary">Bắt đầu lại</button>
           </div>
         </div>
-        <!-- Google Calendar Import Instructions -->
-        <div id="googleCalendarInstructions" class="step instructions-panel">
-          <h4>Làm thế nào để nhập lịch vào Google Calendar</h4>
-          <ol class="instructions-list">
-            <li>Vào trang tạo lịch hoặc nhấn "Thêm vào Google Calendar ở phía trên"</li>
-            <li>Tạo một lịch mới có tên bất kỳkỳ trên trang đã mở</li>
-            <li>Sau khi tạo xong, nhấp vào "Nhập & Xuất" (Import & Export) ở menu bên trái</li>
-            <li>Nhấp vào "Chọn tệp từ máy tính của bạn" và chọn tệp ICS bạn đã tải xuống</li>
-            <li>Chọn lịch mà bạn vừa đặt ở bước 2 từ danh sách thả xuống</li>
-            <li>Chọn Nhập để hoàn thành</li>
-          </ol>
-          <button id="hideInstructionsBtn" class="btn btn-outline-secondary btn-sm mt-2">Ẩn hướng dẫn</button>
-        </div>
 
-        <!-- Loading Indicator -->
-        <div id="loading" class="loading">
-          <div class="spinner-border text-primary" role="status">
-            <span class="visually-hidden">Đang tải...</span>
-          </div>
-          <p class="mt-2" id="loadingText">Đang xử lí...</p>
-        </div>
-
-        <!-- Error Display -->
-        <div id="error" class="alert alert-danger mt-3" style="display: none;"></div>
+        <script>
+          document.getElementById('examsemForm').addEventListener('submit', function (event) {
+            event.preventDefault(); // Ngăn chặn submit form mặc định
+            const examsemLabel = document.querySelector('#examsem').selectedOptions[0].label;
+            document.getElementById('step3Message').textContent = `${examsemLabel} của bạn đã được lấy thành công!`;
+          });
+        </script>
       </div>
+      <!-- Google Calendar Import Instructions -->
+      <div id="googleCalendarInstructions" class="step instructions-panel">
+        <h4>Làm thế nào để nhập lịch vào Google Calendar</h4>
+        <ol class="instructions-list">
+          <li>Vào trang tạo lịch hoặc nhấn "Thêm vào Google Calendar ở phía trên"</li>
+          <li>Tạo một lịch mới có tên bất kỳkỳ trên trang đã mở</li>
+          <li>Sau khi tạo xong, nhấp vào "Nhập & Xuất" (Import & Export) ở menu bên trái</li>
+          <li>Nhấp vào "Chọn tệp từ máy tính của bạn" và chọn tệp ICS bạn đã tải xuống</li>
+          <li>Chọn lịch mà bạn vừa đặt ở bước 2 từ danh sách thả xuống</li>
+          <li>Chọn Nhập để hoàn thành</li>
+        </ol>
+        <button id="hideInstructionsBtn" class="btn btn-outline-secondary btn-sm mt-2">Ẩn hướng dẫn</button>
+      </div>
+
+      <!-- Loading Indicator -->
+      <div id="loading" class="loading">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Đang tải...</span>
+        </div>
+        <p class="mt-2" id="loadingText">Đang xử lí...</p>
+      </div>
+
+      <!-- Error Display -->
+      <div id="error" class="alert alert-danger mt-3" style="display: none;"></div>
     </div>
+  </div>
   </div>
 
   <script>
@@ -596,10 +605,10 @@
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({data})
+          body: JSON.stringify({ data })
         });
 
-        console.log(response.data)
+        // console.log(response.data)
         if (!response.ok) {
           const errorData = await response.json();
           throw new Error(errorData.message || 'Không tạo được tệp ICS');
@@ -618,7 +627,7 @@
         a.click();
 
         hideLoading();
-      } catch ( error ) {
+      } catch (error) {
         console.error('Lỗi tạo ICS:', error);
         hideLoading();
         showError(error.message || 'Đã xảy ra lỗi khi tạo tệp lịch');
@@ -640,7 +649,7 @@
       try {
         // First, get the ICS content
         const endpoint = examsemSelect.value === 'schedule' ? '/api/generate-ics' : '/api/generate-ics/exam';
-        const data = examsemSelect.value === 'schedule' ? scheduleData: examData ;
+        const data = examsemSelect.value === 'schedule' ? scheduleData : examData;
 
         // Fetch ICS content
         const response = await fetch(endpoint, {
@@ -648,7 +657,7 @@
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({data})
+          body: JSON.stringify({ data })
         });
 
         if (!response.ok) {
@@ -674,7 +683,7 @@
         createGoogleCalendarWithIcs();
 
         hideLoading();
-      } catch ( error ) {
+      } catch (error) {
         console.error('Lỗi nhập Google Lịch:', error);
         hideLoading();
         showError(error.message || 'Đã xảy ra lỗi khi chuẩn bị nhập Google Calendar');
