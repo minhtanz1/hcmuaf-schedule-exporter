@@ -7,14 +7,16 @@ const ical = require('ical-generator');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const dotenv = require('dotenv');
-const session = require('express-session');
+const strftime = require('strftime')
+// const session = require('express-session');
+const cookieParser = require('cookie-parser');
 const crypto = require('crypto');
+const { start } = require('repl');
 // Load environment variables
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const baseUrl = process.env.NODE_ENV === "production" ? "https://hcmuaf-schedule-exporter.vercel.app" : "http://localhost:3000";
 // const baseUrl = process.env.BASE_URL
 // Middleware
 app.use(cors());
@@ -22,15 +24,16 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 // app.use(express.static('public'));
-app.use(session({
-  secret: crypto.randomBytes(32).toString('hex'),
-  resave: false,
-  saveUninitialized: true,
-  cookie: { secure: process.env.NODE_ENV === 'production', httpOnly: true }
-}));
+app.use(cookieParser());
+// app.use(session({
+//   secret: crypto.randomBytes(32).toString('hex'),
+//   resave: false,
+//   saveUninitialized: true,
+//   cookie: { secure: process.env.NODE_ENV === 'production', httpOnly: true }
+// }));
 // Routes
 app.get(`/`, (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  res.sendFile(path.join(__dirname, '../public', 'index.html'));
 });
 
 // Login endpoint
@@ -50,8 +53,13 @@ app.post(`/api/login`, async (req, res) => {
 
     if (response.data && response.data.access_token) {
       // Success - return token to client
-      console.log(response)
-      req.session.access_token = response.data.access_token;
+      // console.log(response)
+      // req.session.access_token = response.data.access_token;
+      res.cookie('access_token', response.data.access_token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 3600000 // 1 giờ
+      });
       return res.json({ success: true });
       // return res.json({ success: true, access_token: response.data.access_token });
     } else {
@@ -65,11 +73,12 @@ app.post(`/api/login`, async (req, res) => {
 app.post(`/api/fetch-semesters`, async (req, res) => {
   try {
     // const { access_token } = req.body;
-
+    const access_token = req.cookies.access_token;
     // if (!access_token) {
     //   return res.status(400).json({ success: false, message: 'Access token is required' });
-    if (!req.session.access_token) {
-      return res.status(401).json({ success: false, message: 'Please log in first' });
+    // if (!req.session.access_token) {
+    if (!access_token) {
+      return res.status(401).json({ success: false, message: 'Vui lòng đăng nhập trước' });
     }
 
     const response = await axios.post(
@@ -78,7 +87,7 @@ app.post(`/api/fetch-semesters`, async (req, res) => {
       {
         headers: {
           'accept': 'application/json, text/plain, */*',
-          'authorization': `Bearer  ${req.session.access_token}`,
+          'authorization': `Bearer  ${access_token}`,
           'content-type': 'application/json',
           'Referer': 'https://dkmh.hcmuaf.edu.vn/public/',
           'Referrer-Policy': 'strict-origin-when-cross-origin'
@@ -107,11 +116,13 @@ app.post(`/api/fetch-schedule`, async (req, res) => {
     // if (!access_token) {
     //   return res.status(400).json({ success: false, message: 'Access token is required' });
     const { semester = 20242 } = req.body;
-
-    if (!req.session.access_token) {
+    const access_token = req.cookies.access_token;
+    // if (!req.session.access_token) {
+    //   return res.status(401).json({ success: false, message: 'Please log in first' });
+    // }
+    if (!access_token) {
       return res.status(401).json({ success: false, message: 'Please log in first' });
     }
-
     const response = await axios.post(
       'https://dkmh.hcmuaf.edu.vn/api/sch/w-locdstkbtuanusertheohocky',
       {
@@ -124,7 +135,7 @@ app.post(`/api/fetch-schedule`, async (req, res) => {
       {
         headers: {
           'accept': 'application/json, text/plain, */*',
-          'authorization': `Bearer ${req.session.access_token}`,
+          'authorization': `Bearer ${access_token}`,
           'content-type': 'application/json',
           'Referer': 'https://dkmh.hcmuaf.edu.vn/public/',
           'Referrer-Policy': 'strict-origin-when-cross-origin'
@@ -170,35 +181,41 @@ app.post(`/api/generate-ics`, (req, res) => {
     scheduleData.data.ds_tuan_tkb.forEach(week => {
       // Iterate through scheduled classes
       week.ds_thoi_khoa_bieu.forEach(lesson => {
-        const lessonDate = new Date(lesson.ngay_hoc.split('T')[0]);
+        const lessonDateStr = strftime('%Y-%m-%d', new Date(lesson.ngay_hoc.split('T')[0])); // "YYYY-MM-DD"
+
+        // Get start and end times from the periods object (defaults to "00:00" if not found)
         const [startTime, endTime] = periods[lesson.tiet_bat_dau] || ['00:00', '00:00'];
 
-        // Parse start and end times
-        const [startHour, startMinute] = startTime.split(':').map(Number);
-        const [endHour, endMinute] = endTime.split(':').map(Number);
-
-        // Create start and end dates
-        const startDate = new Date(lessonDate);
-        startDate.setHours(startHour, startMinute, 0);
-
-        const endDate = new Date(lessonDate);
-        endDate.setHours(endHour, endMinute, 0);
-
+        // Create Date objects by combining the lesson date and the time strings.
+        // We build an ISO string in the format "YYYY-MM-DDTHH:mm:ss".
+        // This will work similarly to Python's datetime.strptime.
+        const startDate = `${lessonDateStr}T${startTime}:00`;
+        const endDate = `${lessonDateStr}T${endTime}:00`;
+        // console.log(startDate, endDate);
         // Add event to calendar
         calendar.createEvent({
           start: startDate,
           end: endDate,
           summary: lesson.ten_mon,
           location: lesson.ma_phong,
-          description: `Giảng viên: ${lesson.ten_giang_vien}\nMã lớp: ${lesson.ma_lop}`
+          description: `Giảng viên: ${lesson.ten_giang_vien}\nMã lớp: ${lesson.ma_lop}\nMã nhóm: ${lesson.ma_nhom}\nThông tin tuần: ${week.thong_tin_tuan}`,
+          timezone: 'Asia/Ho_Chi_Minh'
         });
       });
     });
 
     // Generate ICS content
-    const icsContent = calendar.toString();
-
+    let icsContent = calendar.toString();
+    // icsContent = icsContent.replace(/^BEGIN:VCALENDAR.*\r?\n?/gm, '');
+    // icsContent = icsContent.replace(/^VERSION:.*\r?\n?/gm, '');
+    // icsContent = icsContent.replace(/^PRODID:.*\r?\n?/gm, '');
+    // icsContent = icsContent.replace(/^NAME:.*\r?\n?/gm, '');
+    // icsContent = icsContent.replace(/^X-WR-CALNAME:.*\r?\n?/gm, '');
+    // icsContent = icsContent.replace(/^DTSTAMP:.*\r?\n?/gm, '');
+    // icsContent = icsContent.replace(/^UID:.*\r?\n?/gm, '');
+    // icsContent = icsContent.replace(/^SEQUENCE:.*\r?\n?/gm, '');
     // Return ICS content to client
+    
     res.set('Content-Type', 'text/calendar');
     res.set('Content-Disposition', 'attachment; filename=tkb_exported.ics');
     return res.send(icsContent);
@@ -230,33 +247,26 @@ app.post(`/api/google-calendar-urls`, (req, res) => {
     scheduleData.data.ds_tuan_tkb.forEach(week => {
       // Iterate through scheduled classes
       week.ds_thoi_khoa_bieu.forEach(lesson => {
-        const lessonDate = new Date(lesson.ngay_hoc.split('T')[0]);
+        const lessonDateStr = strftime('%Y-%m-%d', new Date(lesson.ngay_hoc.split('T')[0])); // "YYYY-MM-DD"
+
+        // Get start and end times from the periods object (defaults to "00:00" if not found)
         const [startTime, endTime] = periods[lesson.tiet_bat_dau] || ['00:00', '00:00'];
 
-        // Parse start and end times
-        const [startHour, startMinute] = startTime.split(':').map(Number);
-        const [endHour, endMinute] = endTime.split(':').map(Number);
-
-        // Create start and end dates
-        const startDate = new Date(lessonDate);
-        startDate.setHours(startHour, startMinute, 0);
-
-        const endDate = new Date(lessonDate);
-        endDate.setHours(endHour, endMinute, 0);
-
-        // Format dates for Google Calendar (YYYYMMDDTHHMMSSZ)
-        const startFormatted = startDate.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/g, '');
-        const endFormatted = endDate.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/g, '');
-
+        // Create Date objects by combining the lesson date and the time strings.
+        // We build an ISO string in the format "YYYY-MM-DDTHH:mm:ss".
+        // This will work similarly to Python's datetime.strptime.
+        const startDate = `${lessonDateStr}T${startTime}:00`;
+        const endDate = `${lessonDateStr}T${endTime}:00`;
+        // console.log(startDate, endDate)
         // Create event object
         const event = {
           summary: lesson.ten_mon,
-          start: startFormatted,
-          end: endFormatted,
+          start: startDate,
+          end: endDate,
           location: lesson.ma_phong,
-          description: `Giảng viên: ${lesson.ten_giang_vien}\nMã lớp: ${lesson.ma_lop}`
+          description: `Giảng viên: ${lesson.ten_giang_vien}\nMã lớp: ${lesson.ma_lop}\nMã nhóm: ${lesson.ma_nhom}\nThông tin tuần: ${week.thong_tin_tuan}`,
+          timezone: 'Asia/Ho_Chi_Minh'
         };
-
         events.push(event);
       });
     });

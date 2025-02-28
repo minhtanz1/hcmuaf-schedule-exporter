@@ -165,6 +165,7 @@
     const loading = document.getElementById('loading');
     const loadingText = document.getElementById('loadingText');
     const errorEl = document.getElementById('error');
+    // const baseURL = `${window.location.protocol}//${window.location.host}`;
     // Helper functions
     function showStep(step) {
       // Hide all steps
@@ -280,22 +281,28 @@
 
       return events;
     }
-
     // Format date for Google Calendar URL
-    function formatGoogleCalendarDate(icsDate) {
-      // ICS date format: YYYYMMDDTHHMMSSZ
-      if (icsDate.length < 15) return '';
+    function formatGoogleCalendarDate(isoDate) {
+      // ISO 8601 format: YYYY-MM-DDTHH:MM:SS
+      const dateTimeParts = isoDate.split('T');
+      if (dateTimeParts.length !== 2) return '';
 
-      const year = icsDate.substring(0, 4);
-      const month = icsDate.substring(4, 6);
-      const day = icsDate.substring(6, 8);
-      const hour = icsDate.substring(9, 11);
-      const minute = icsDate.substring(11, 13);
-      const second = icsDate.substring(13, 15);
+      const datePart = dateTimeParts[0]; // Extract the date (YYYY-MM-DD)
+      const timePart = dateTimeParts[1]; // Extract the time (HH:MM:SS)
 
+      const dateComponents = datePart.split('-');
+      const timeComponents = timePart.split(':');
+
+      if (dateComponents.length !== 3 || timeComponents.length !== 3) return '';
+
+      const year = dateComponents[0];
+      const month = dateComponents[1];
+      const day = dateComponents[2];
+      const hour = timeComponents[0];
+      const minute = timeComponents[1];
+      const second = timeComponents[2];
       return `${year}${month}${day}T${hour}${minute}${second}`;
     }
-
     // Generate Google Calendar URL for a single event
     function generateGoogleCalendarUrl(event) {
       const baseUrl = 'https://calendar.google.com/calendar/render';
@@ -344,8 +351,6 @@
       // Open the calendar creation page
       window.open(importUrl, '_blank');
 
-      // Show instructions to user
-      // alert('To import your schedule:\n\n1. Create a new calendar named "Schedule" on the page that opened\n2. After creating, click on "Import & Export" on the left menu\n3. Click "Select file from your computer" and choose the ICS file you downloaded\n4. Select your "Schedule" calendar from the dropdown\n5. Click Import');
     }
 
     // Event handlers
@@ -500,6 +505,8 @@
         }
 
         // Get text content from the response
+        console.log(response.text);
+
         const icsContent = await response.text();
 
         // Download the file first (required for import)
