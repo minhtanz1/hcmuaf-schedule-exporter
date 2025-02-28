@@ -69,7 +69,6 @@
 <body>
   <div class="container mt-5">
     <h1 class="text-center mb-4">Chuyển TKB từ trang đkmh sang Google Calendar</h1>
-
     <div class="card shadow-sm">
       <div class="card-body">
         <!-- Step 1: Login Form -->
@@ -88,12 +87,27 @@
           </form>
         </div>
 
-        <!-- Step 2: Choose Semester -->
+        <!-- Step 2: Choose exam & semester schedule  -->
         <div id="step2" class="step">
-          <h3>Bước 2: Chọn học kì</h3>
+          <h3>Bước 2: Chọn thời khóa biểu hoặc lịch thi</h3>
+          <form id="examsemForm">
+            <div class="mb-3">
+              <label for="examsem" class="form-label">Chọn thời khóa biểu hoặc lịch thi</label>
+              <select class="form-select" id="examsem" required>
+                <option value="schedule">TKB</option>
+                <option value="exam">Lịch thi</option>
+              </select>
+              <div class="form-text">Chọn tkb và lịch thi mà bạn muốn chuyển sang Google Calendar</div>
+            </div>
+            <button type="submit" class="btn btn-primary">Kế tiếp </button>
+          </form>
+        </div>
+        <!-- Step 2.1: Choose schedule  -->
+        <div id="step21" class="step">
+          <h3>Chọn học kì (TKB)</h3>
           <form id="semesterForm">
             <div class="mb-3">
-              <label for="semester" class="form-label">Chọn học kì</label>
+              <label for="semester" class="form-label">Chọn học kì tkb</label>
               <select class="form-select" id="semester" required>
                 <option value="" disabled selected>Đang tải học kì...</option>
               </select>
@@ -102,7 +116,20 @@
             <button type="submit" class="btn btn-primary">Lấy TKB</button>
           </form>
         </div>
-
+        <!-- Step 2.1: Choose exam  -->
+        <div id="step22" class="step">
+          <h3>Chọn học kì (Lịch thi)</h3>
+          <form id="examForm">
+            <div class="mb-3">
+              <label for="exam" class="form-label">Chọn học kì lịch thi </label>
+              <select class="form-select" id="exam" required>
+                <option value="" disabled selected>Đang tải học kì...</option>
+              </select>
+              <div class="form-text">Chọn học kì mà bạn muốn chuyển sang Google Calendar</div>
+            </div>
+            <button type="submit" class="btn btn-primary">Lấy TKB</button>
+          </form>
+        </div>
         <!-- Step 3: Download Calendar -->
         <div id="step3" class="step">
           <h3>Bước 3: Đưa TKB vào Google Calendar</h3>
@@ -152,13 +179,16 @@
     let accessToken = '';
     // let scheduleData = null;
     let calendarEvents = [];
-
+    let examData = null;
     // DOM Elements
     const step1 = document.getElementById('step1');
     const step2 = document.getElementById('step2');
+    const step21 = document.getElementById('step21');
+    const step22 = document.getElementById('step22');
     const step3 = document.getElementById('step3');
     const loginForm = document.getElementById('loginForm');
     const semesterForm = document.getElementById('semesterForm');
+    const examsemSelect = document.getElementById('examsem');
     const downloadBtn = document.getElementById('downloadBtn');
     const importGoogleBtn = document.getElementById('importGoogleBtn');
     const startOverBtn = document.getElementById('startOverBtn');
@@ -169,7 +199,7 @@
     // Helper functions
     function showStep(step) {
       // Hide all steps
-      [step1, step2, step3].forEach(el => {
+      [step1, step2, step21, step22, step3].forEach(el => {
         el.classList.remove('active');
       });
       // Show requested step
@@ -242,6 +272,63 @@
 
         // Add a default option if fetch fails
         const semesterSelect = document.getElementById('semester');
+        semesterSelect.innerHTML = ''; // Clear loading option
+        const option = document.createElement('option');
+        option.value = "00000";
+        option.textContent = "Chọn học kì";
+        semesterSelect.appendChild(option);
+      }
+    }
+    async function fetchExams() {
+      hideError();
+      showLoading('Đang tìm kiếm các học kỳ có sẵn...');
+
+      try {
+        const response = await fetch('/api/fetch-semesters-exam', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          // body: JSON.stringify({ access_token: accessToken })
+          body: JSON.stringify({})
+        });
+
+        const data = await response.json();
+        console.log(data);
+        
+        if (!response.ok || !data.success) {
+          throw new Error(data.message || 'Không thể lấy học kỳ');
+        }
+
+        const semesterSelect = document.getElementById('exam');
+        semesterSelect.innerHTML = ''; // Clear loading option
+
+        if (data.data && data.data.ds_hoc_ky && data.data.ds_hoc_ky.length > 0) {
+          // Add options for each semester
+          data.data.ds_hoc_ky.forEach(semester => {
+            const option = document.createElement('option');
+            option.value = semester.hoc_ky;
+            option.textContent = semester.ten_hoc_ky;
+            semesterSelect.appendChild(option);
+          });
+        } else {
+          // If no semesters found
+          const option = document.createElement('option');
+          option.value = "";
+          option.textContent = "Không có học kỳ nào có sẵn";
+          option.disabled = true;
+          option.selected = true;
+          semesterSelect.appendChild(option);
+        }
+
+        hideLoading();
+      } catch (error) {
+        console.error('Lỗi tìm nạp học kỳ:', error);
+        hideLoading();
+        showError(error.message || 'Đã xảy ra lỗi khi tải học kỳ');
+
+        // Add a default option if fetch fails
+        const semesterSelect = document.getElementById('exam');
         semesterSelect.innerHTML = ''; // Clear loading option
         const option = document.createElement('option');
         option.value = "00000";
@@ -385,7 +472,7 @@
 
         //accessToken = data.access_token;
         hideLoading();
-        await fetchSemesters();
+        
         showStep(step2);
       } catch (error) {
         console.error('Lỗi đăng nhập:', error);
@@ -433,7 +520,50 @@
         showError(error.message || 'Đã xảy ra lỗi khi lấy lịch trình');
       }
     });
-
+    examsemForm.addEventListener('submit', async function (event) {
+      event.preventDefault();
+      hideError();
+      
+      if (examsemSelect.value === 'schedule') {
+        hideLoading();
+        await fetchSemesters();
+        showStep(step21);
+      } else if (examsemSelect.value === 'exam') {
+        hideLoading();
+        await fetchExams();
+        showStep(step22);
+      }
+    });
+    const examForm = document.getElementById('examForm');
+    examForm.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      hideError();
+      const examSemester = document.getElementById('exam').value;
+      if (!examSemester) {
+        showError('Vui lòng chọn học kỳ');
+        return;
+      }
+      showLoading('Đang lấy lịch thi...');
+      try {
+        const response = await fetch('/api/fetch-exam', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ semester: examSemester })
+        });
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+          throw new Error(data.message || 'Không thể lấy lịch thi');
+        }
+        examData = data.data;
+        hideLoading();
+        showStep(step3);
+        document.getElementById('googleCalendarInstructions').style.display = 'block';
+      } catch (error) {
+        console.error('Lỗi lấy lịch thi:', error);
+        hideLoading();
+        showError(error.message || 'Đã xảy ra lỗi khi lấy lịch thi');
+      }
+    });
     downloadBtn.addEventListener('click', async function () {
       hideError();
 
@@ -482,7 +612,7 @@
     importGoogleBtn.addEventListener('click', async function () {
       hideError();
 
-      if (!scheduleData) {
+      if (!scheduleData || !examData) {
         showError('Không có dữ liệu lịch trình nào có sẵn');
         return;
       }
@@ -491,21 +621,35 @@
 
       try {
         // First, get the ICS content
-        const response = await fetch('/api/generate-ics', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ scheduleData })
-        });
+        if (examsemSelect.value === 'schedule') {
+          const response = await fetch('/api/generate-ics', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ scheduleData })
+          });
+        } else if (examsemSelect.value === 'exam') {
+          const response = await fetch('/api/generate-ics/exam', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ examData })
+          });
+        }
+        // const response = await fetch('/api/generate-ics', {
+        //   method: 'POST',
+        //   headers: {
+        //     'Content-Type': 'application/json'
+        //   },
+        //   body: JSON.stringify({ scheduleData })
+        // });
 
         if (!response.ok) {
           const errorData = await response.json();
           throw new Error(errorData.message || 'Không tạo được dữ liệu lịch');
         }
-
-        // Get text content from the response
-        console.log(response.text);
 
         const icsContent = await response.text();
 

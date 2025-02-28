@@ -12,6 +12,7 @@ const strftime = require('strftime')
 const cookieParser = require('cookie-parser');
 const crypto = require('crypto');
 const { start } = require('repl');
+const { error } = require('console');
 // Load environment variables
 dotenv.config();
 
@@ -101,13 +102,102 @@ app.post(`/api/fetch-semesters`, async (req, res) => {
       return res.status(404).json({ success: false, message: 'No semester data found' });
     }
   } catch (error) {
-    console.error('Semester fetch error:', error.message);
+    console.error('Semester fetch error:', error); // Log the entire error object
+    if (error.response) {
+        console.error('Response status:', error.response.status); // Log response status
+        console.error('Response data:', error.response.data);   // Log response data
+        if (error.response.status === 401) {
+            return res.status(401).json({ success: false, message: 'Unauthorized - please log in again' });
+        }
+    }
+    return res.status(500).json({ success: false, message: 'Server error fetching semesters' });
+}
+});
+app.post(`/api/fetch-sem-exam`, async (req, res) => {
+  try {
+    // const { access_token } = req.body;
+    const access_token = req.cookies.access_token;
+    // if (!access_token) {
+    //   return res.status(400).json({ success: false, message: 'Access token is required' });
+    // if (!req.session.access_token) {
+    if (!access_token) {
+      return res.status(401).json({ success: false, message: 'Vui lòng đăng nhập trước' });
+    }
+
+    const response = await axios.post(
+      'https://dkmh.hcmuaf.edu.vn/api/report/w-locdshockylichthisinhvien',
+      {},
+      {
+        headers: {
+          'accept': 'application/json, text/plain, */*',
+          'authorization': `Bearer ${access_token}`,
+          'content-type': 'application/json',
+          'Referer': 'https://dkmh.hcmuaf.edu.vn/',
+          'Referrer-Policy': 'strict-origin-when-cross-origin'
+        }
+      }
+    );
+    console.log(response);
+    
+    if (response.data && response.data.data) {
+      return res.json({ success: true, data: response.data.data });
+    } else {
+      return res.status(404).json({ success: false, message: 'No semester data found' });
+    }
+  } catch (error) {
+    console.error('Semester fetch error:', error); // Log the entire error object
+    if (error.response) {
+        console.error('Response status:', error.response.status); // Log response status
+        console.error('Response data:', error.response.data);   // Log response data
+        if (error.response.status === 401) {
+            return res.status(401).json({ success: false, message: 'Unauthorized - please log in again' });
+        }
+    }
+    return res.status(500).json({ success: false, message: 'Server error fetching semesters' });
+}
+});
+
+
+app.post('/api/fetch-exam', async (req, res) => {
+  try {
+    const { semester = 20242 } = req.body;
+    const access_token = req.cookies.access_token;
+    if (!access_token) {
+      return res.status(401).json({ success: false, message: 'Vui lòng đăng nhập trước' });
+    }
+    const response = await axios.post(
+      'https://dkmh.hcmuaf.edu.vn/api/epm/w-locdslichthisvtheohocky',
+      {
+        filter: { hoc_ky: semester, is_giua_ky: false },
+        additional: {
+          paging: { limit: 100, page: 1 },
+          ordering: [{ name: null, order_type: null }]
+        }
+      },
+      {
+        headers: {
+          'accept': 'application/json, text/plain, */*',
+          'authorization': `Bearer ${access_token}`,
+          'content-type': 'application/json',
+          'Referer': 'https://dkmh.hcmuaf.edu.vn/',
+          'Referrer-Policy': 'strict-origin-when-cross-origin'
+        }
+      }
+    );
+    if (response.data) {
+      return res.json({ success: true, data: response.data });
+    } else {
+      return res.status(404).json({ success: false, message: 'No exam schedule data found' });
+    }
+  } catch { error } {
+    console.error('Schedule fetch error:', error.message);
     if (error.response && error.response.status === 401) {
       return res.status(401).json({ success: false, message: 'Unauthorized - please log in again' });
     }
-    return res.status(500).json({ success: false, message: 'Server error fetching semesters' });
+    return res.status(500).json({ success: false, message: 'Server error fetching schedule' });
   }
 });
+
 // Fetch schedule endpoint
 app.post(`/api/fetch-schedule`, async (req, res) => {
   try {
@@ -206,16 +296,8 @@ app.post(`/api/generate-ics`, (req, res) => {
 
     // Generate ICS content
     let icsContent = calendar.toString();
-    // icsContent = icsContent.replace(/^BEGIN:VCALENDAR.*\r?\n?/gm, '');
-    // icsContent = icsContent.replace(/^VERSION:.*\r?\n?/gm, '');
-    // icsContent = icsContent.replace(/^PRODID:.*\r?\n?/gm, '');
-    // icsContent = icsContent.replace(/^NAME:.*\r?\n?/gm, '');
-    // icsContent = icsContent.replace(/^X-WR-CALNAME:.*\r?\n?/gm, '');
-    // icsContent = icsContent.replace(/^DTSTAMP:.*\r?\n?/gm, '');
-    // icsContent = icsContent.replace(/^UID:.*\r?\n?/gm, '');
-    // icsContent = icsContent.replace(/^SEQUENCE:.*\r?\n?/gm, '');
-    // Return ICS content to client
-    
+
+
     res.set('Content-Type', 'text/calendar');
     res.set('Content-Disposition', 'attachment; filename=tkb_exported.ics');
     return res.send(icsContent);
@@ -269,6 +351,99 @@ app.post(`/api/google-calendar-urls`, (req, res) => {
         };
         events.push(event);
       });
+    });
+
+    // Return the event data
+    return res.json({ success: true, events });
+  } catch (error) {
+    console.error('Google Calendar URL generation error:', error.message);
+    return res.status(500).json({ success: false, message: 'Server error generating Google Calendar URLs' });
+  }
+});
+
+app.post(`/api/generate-ics/exam`, (req, res) => {
+  try {
+    const { examData } = req.body;
+
+    if (!examData || !examData.data) {
+      return res.status(400).json({ success: false, message: 'Schedule data is required' });
+    }
+
+    // Create calendar
+    const calendar = ical({ name: 'EXAM NLU' });
+
+
+    // Iterate through weeks
+    examData.data.ds_lich_thi.forEach(subject => {
+      // Iterate through scheduled classes
+      const subjectDateStr = strftime('%Y-%m-%d', new Date(subject.ngay_thi)); // "YYYY-MM-DD"
+
+      // Get start and end times from the periods object (defaults to "00:00" if not found)
+      const startTime = subject.gio_bat_dau;
+      const endTime = subject.gio_bat_dau + subject.phut;
+
+      // Create Date objects by combining the lesson date and the time strings.
+      // We build an ISO string in the format "YYYY-MM-DDTHH:mm:ss".
+      // This will work similarly to Python's datetime.strptime.
+      const startDate = `${subjectDateStr}T${startTime}:00`;
+      const endDate = `${subjectDateStr}T${endTime}:00`;
+      // console.log(startDate, endDate);
+      // Add event to calendar
+      calendar.createEvent({
+        start: startDate,
+        end: endDate,
+        summary: subject.ten_mon,
+        location: `${subject.ma_phong}-${subject.Dia_diem_thi}`,
+        description: `Ghép thi: ${subject.ghep_thi}\nTổ thi: ${subject.to_thi}\nMã nhóm: ${subject.nhom_thi}\Sĩ sô: ${subject.si_so}`,
+        timezone: 'Asia/Ho_Chi_Minh'
+      });
+    });
+
+    // Generate ICS content
+    let icsContent = calendar.toString();
+
+    res.set('Content-Type', 'text/calendar');
+    res.set('Content-Disposition', 'attachment; filename=tkb_exported.ics');
+    return res.send(icsContent);
+  } catch (error) {
+    console.error('ICS generation error:', error.message);
+    return res.status(500).json({ success: false, message: 'Server error generating ICS file' });
+  }
+});
+app.post(`/api/google-calendar-urls/exam`, (req, res) => {
+  try {
+    const { examData } = req.body;
+
+    if (!examData || !examData.data) {
+      return res.status(400).json({ success: false, message: 'Schedule data is required' });
+    }
+
+    // Store event data for Google Calendar
+    const events = [];
+
+    // Iterate through weeks
+    examData.data.ds_lich_thi.forEach(subject => {
+      // Iterate through scheduled classes
+      const subjectDateStr = strftime('%Y-%m-%d', new Date(subject.ngay_thi)); // "YYYY-MM-DD"
+
+      // Get start and end times from the periods object (defaults to "00:00" if not found)
+      const startTime = subject.gio_bat_dau;
+      const endTime = subject.gio_bat_dau + subject.phut;
+
+      // Create Date objects by combining the lesson date and the time strings.
+      // We build an ISO string in the format "YYYY-MM-DDTHH:mm:ss".
+      // This will work similarly to Python's datetime.strptime.
+      const startDate = `${subjectDateStr}T${startTime}:00`;
+      const endDate = `${subjectDateStr}T${endTime}:00`;
+      const event = {
+        start: startDate,
+        end: endDate,
+        summary: subject.ten_mon,
+        location: `${subject.ma_phong}-${subject.Dia_diem_thi}`,
+        description: `Ghép thi: ${subject.ghep_thi}\nTổ thi: ${subject.to_thi}\nMã nhóm: ${subject.nhom_thi}\Sĩ sô: ${subject.si_so}`,
+        timezone: 'Asia/Ho_Chi_Minh'
+      };
+      events.push(event);
     });
 
     // Return the event data
