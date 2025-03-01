@@ -179,7 +179,7 @@
     let accessToken = '';
     // let scheduleData = null;
     let calendarEvents = [];
-    let examData = null;
+    // let examData = null;
     // DOM Elements
     const step1 = document.getElementById('step1');
     const step2 = document.getElementById('step2');
@@ -279,12 +279,12 @@
         semesterSelect.appendChild(option);
       }
     }
-    async function fetchExams() {
+    async function fetchSemExam() {
       hideError();
       showLoading('Đang tìm kiếm các học kỳ có sẵn...');
 
       try {
-        const response = await fetch('/api/fetch-semesters-exam', {
+        const response = await fetch('/api/fetch-semexam', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -294,8 +294,8 @@
         });
 
         const data = await response.json();
-        console.log(data);
-        
+        // console.log(data);
+
         if (!response.ok || !data.success) {
           throw new Error(data.message || 'Không thể lấy học kỳ');
         }
@@ -472,7 +472,7 @@
 
         //accessToken = data.access_token;
         hideLoading();
-        
+
         showStep(step2);
       } catch (error) {
         console.error('Lỗi đăng nhập:', error);
@@ -523,14 +523,14 @@
     examsemForm.addEventListener('submit', async function (event) {
       event.preventDefault();
       hideError();
-      
+
       if (examsemSelect.value === 'schedule') {
         hideLoading();
         await fetchSemesters();
         showStep(step21);
       } else if (examsemSelect.value === 'exam') {
         hideLoading();
-        await fetchExams();
+        await fetchSemExam();
         showStep(step22);
       }
     });
@@ -567,22 +567,39 @@
     downloadBtn.addEventListener('click', async function () {
       hideError();
 
-      if (!scheduleData) {
+      if (examsemSelect.value === 'schedule' && !scheduleData) {
+        showError('Không có dữ liệu lịch trình nào có sẵn');
+        return;
+      } else if (examsemSelect.value === 'exam' && !examData) {
         showError('Không có dữ liệu lịch trình nào có sẵn');
         return;
       }
-
-      showLoading('Đang tạo tập tin lịch...');
+      showLoading('Đang chuẩn bị nhập Google Lịch...');
 
       try {
-        const response = await fetch('/api/generate-ics', {
+        if (examsemSelect.value === 'schedule' && !scheduleData) {
+          showError('Không có dữ liệu lịch trình nào có sẵn');
+          return;
+        } else if (examsemSelect.value === 'exam' && !examData) {
+          showError('Không có dữ liệu lịch trình nào có sẵn');
+          return;
+        }
+        showLoading('Đang chuẩn bị nhập Google Lịch...');
+
+        // First, get the ICS content
+        const endpoint = examsemSelect.value === 'schedule' ? '/api/generate-ics' : '/api/generate-ics/exam';
+        const data = examsemSelect.value === 'schedule' ? scheduleData : examData;
+        console.log(JSON.stringify({ data }))
+        // Fetch ICS content
+        const response = await fetch(endpoint, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({ scheduleData })
+          body: JSON.stringify({data})
         });
 
+        console.log(response.data)
         if (!response.ok) {
           const errorData = await response.json();
           throw new Error(errorData.message || 'Không tạo được tệp ICS');
@@ -599,10 +616,9 @@
         a.download = 'tkb_exported.ics';
         document.body.appendChild(a);
         a.click();
-        window.URL.revokeObjectURL(url);
 
         hideLoading();
-      } catch (error) {
+      } catch ( error ) {
         console.error('Lỗi tạo ICS:', error);
         hideLoading();
         showError(error.message || 'Đã xảy ra lỗi khi tạo tệp lịch');
@@ -612,39 +628,28 @@
     importGoogleBtn.addEventListener('click', async function () {
       hideError();
 
-      if (!scheduleData || !examData) {
+      if (examsemSelect.value === 'schedule' && !scheduleData) {
+        showError('Không có dữ liệu lịch trình nào có sẵn');
+        return;
+      } else if (examsemSelect.value === 'exam' && !examData) {
         showError('Không có dữ liệu lịch trình nào có sẵn');
         return;
       }
-
       showLoading('Đang chuẩn bị nhập Google Lịch...');
 
       try {
         // First, get the ICS content
-        if (examsemSelect.value === 'schedule') {
-          const response = await fetch('/api/generate-ics', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ scheduleData })
-          });
-        } else if (examsemSelect.value === 'exam') {
-          const response = await fetch('/api/generate-ics/exam', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ examData })
-          });
-        }
-        // const response = await fetch('/api/generate-ics', {
-        //   method: 'POST',
-        //   headers: {
-        //     'Content-Type': 'application/json'
-        //   },
-        //   body: JSON.stringify({ scheduleData })
-        // });
+        const endpoint = examsemSelect.value === 'schedule' ? '/api/generate-ics' : '/api/generate-ics/exam';
+        const data = examsemSelect.value === 'schedule' ? scheduleData: examData ;
+
+        // Fetch ICS content
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({data})
+        });
 
         if (!response.ok) {
           const errorData = await response.json();
@@ -662,7 +667,6 @@
         a.download = 'tkb_exported.ics';
         document.body.appendChild(a);
         a.click();
-
         // Parse the ICS content to get events
         const events = parseEventsFromIcs(icsContent);
 
@@ -670,7 +674,7 @@
         createGoogleCalendarWithIcs();
 
         hideLoading();
-      } catch (error) {
+      } catch ( error ) {
         console.error('Lỗi nhập Google Lịch:', error);
         hideLoading();
         showError(error.message || 'Đã xảy ra lỗi khi chuẩn bị nhập Google Calendar');

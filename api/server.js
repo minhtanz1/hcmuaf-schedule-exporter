@@ -8,30 +8,21 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const strftime = require('strftime')
-// const session = require('express-session');
 const cookieParser = require('cookie-parser');
 const crypto = require('crypto');
 const { start } = require('repl');
-const { error } = require('console');
+const { error, log } = require('console');
 // Load environment variables
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-// const baseUrl = process.env.BASE_URL
 // Middleware
 app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
-// app.use(express.static('public'));
 app.use(cookieParser());
-// app.use(session({
-//   secret: crypto.randomBytes(32).toString('hex'),
-//   resave: false,
-//   saveUninitialized: true,
-//   cookie: { secure: process.env.NODE_ENV === 'production', httpOnly: true }
-// }));
 // Routes
 app.get(`/`, (req, res) => {
   res.sendFile(path.join(__dirname, '../public', 'index.html'));
@@ -95,7 +86,7 @@ app.post(`/api/fetch-semesters`, async (req, res) => {
         }
       }
     );
-
+    // console.log(response)
     if (response.data && response.data.data) {
       return res.json({ success: true, data: response.data.data });
     } else {
@@ -104,16 +95,16 @@ app.post(`/api/fetch-semesters`, async (req, res) => {
   } catch (error) {
     console.error('Semester fetch error:', error); // Log the entire error object
     if (error.response) {
-        console.error('Response status:', error.response.status); // Log response status
-        console.error('Response data:', error.response.data);   // Log response data
-        if (error.response.status === 401) {
-            return res.status(401).json({ success: false, message: 'Unauthorized - please log in again' });
-        }
+      console.error('Response status:', error.response.status); // Log response status
+      console.error('Response data:', error.response.data);   // Log response data
+      if (error.response.status === 401) {
+        return res.status(401).json({ success: false, message: 'Unauthorized - please log in again' });
+      }
     }
     return res.status(500).json({ success: false, message: 'Server error fetching semesters' });
-}
+  }
 });
-app.post(`/api/fetch-sem-exam`, async (req, res) => {
+app.post(`/api/fetch-semexam`, async (req, res) => {
   try {
     // const { access_token } = req.body;
     const access_token = req.cookies.access_token;
@@ -125,20 +116,27 @@ app.post(`/api/fetch-sem-exam`, async (req, res) => {
     }
 
     const response = await axios.post(
-      'https://dkmh.hcmuaf.edu.vn/api/report/w-locdshockylichthisinhvien',
-      {},
+      `https://dkmh.hcmuaf.edu.vn/api/report/w-locdshockylichthisinhvien`,
+      {
+        filter: { is_tieng_anh: false },
+        additional: {
+          paging: { limit: 100, page: 1 },
+          ordering: [{ name: null, order_type: null }]
+        }
+      },
       {
         headers: {
           'accept': 'application/json, text/plain, */*',
-          'authorization': `Bearer ${access_token}`,
+          'authorization': `Bearer  ${access_token}`,
           'content-type': 'application/json',
-          'Referer': 'https://dkmh.hcmuaf.edu.vn/',
+          'Referer': 'https://dkmh.hcmuaf.edu.vn/public',
+          "sec-fetch-mode": "cors",
           'Referrer-Policy': 'strict-origin-when-cross-origin'
         }
       }
     );
-    console.log(response);
-    
+    // console.log(response);
+
     if (response.data && response.data.data) {
       return res.json({ success: true, data: response.data.data });
     } else {
@@ -147,14 +145,14 @@ app.post(`/api/fetch-sem-exam`, async (req, res) => {
   } catch (error) {
     console.error('Semester fetch error:', error); // Log the entire error object
     if (error.response) {
-        console.error('Response status:', error.response.status); // Log response status
-        console.error('Response data:', error.response.data);   // Log response data
-        if (error.response.status === 401) {
-            return res.status(401).json({ success: false, message: 'Unauthorized - please log in again' });
-        }
+      console.error('Response status:', error.response.status); // Log response status
+      console.error('Response data:', error.response.data);   // Log response data
+      if (error.response.status === 401) {
+        return res.status(401).json({ success: false, message: 'Unauthorized - please log in again' });
+      }
     }
     return res.status(500).json({ success: false, message: 'Server error fetching semesters' });
-}
+  }
 });
 
 
@@ -189,7 +187,7 @@ app.post('/api/fetch-exam', async (req, res) => {
     } else {
       return res.status(404).json({ success: false, message: 'No exam schedule data found' });
     }
-  } catch { error } {
+  } catch (error) {
     console.error('Schedule fetch error:', error.message);
     if (error.response && error.response.status === 401) {
       return res.status(401).json({ success: false, message: 'Unauthorized - please log in again' });
@@ -355,17 +353,19 @@ app.post(`/api/google-calendar-urls`, (req, res) => {
 
     // Return the event data
     return res.json({ success: true, events });
-  } catch (error) {
+  } catch { error } {
     console.error('Google Calendar URL generation error:', error.message);
     return res.status(500).json({ success: false, message: 'Server error generating Google Calendar URLs' });
   }
 });
 
-app.post(`/api/generate-ics/exam`, (req, res) => {
+app.post(`/api/generate-ics/exam`,  (req, res) => {
   try {
-    const { examData } = req.body;
+    const examData = req.body;
+    // console.log(examData.data);
 
-    if (!examData || !examData.data) {
+
+    if (!examData) {
       return res.status(400).json({ success: false, message: 'Schedule data is required' });
     }
 
@@ -373,39 +373,66 @@ app.post(`/api/generate-ics/exam`, (req, res) => {
     const calendar = ical({ name: 'EXAM NLU' });
 
 
-    // Iterate through weeks
-    examData.data.ds_lich_thi.forEach(subject => {
+    // Iterate through subject
+    function addMinutes(timeStr, minutesToAdd) {
+      // Chuyển chuỗi thời gian thành đối tượng Date
+      let [hoursStr, minutesStr] = timeStr.split(':');
+      let hours = parseInt(hoursStr); //7
+      let minutes = parseInt(minutesStr); //30
+      minutes += parseInt(minutesToAdd); // 30 + 30 = 60
+      hours += Math.floor(minutes / 60);
+      minutes %= 60;
+      hours %= 24;
+      return hours.toString().padStart(2, '0') + ':' + minutes.toString().padStart(2, '0')
+    }
+    function parseVietnameseDate(dateStr) {
+      if (!dateStr || typeof dateStr !== 'string') {
+        console.error('Invalid date string:', dateStr);
+        return null;
+      }
+      
+      const parts = dateStr.split('/');
+      if (parts.length !== 3) {
+        console.error('Date string does not match expected format (DD/MM/YYYY):', dateStr);
+        return null;
+      }
+      
+      // Vietnamese format is typically DD/MM/YYYY, convert to YYYY-MM-DD
+      return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+    }
+    examData.data.data.ds_lich_thi.forEach(subject => {
       // Iterate through scheduled classes
-      const subjectDateStr = strftime('%Y-%m-%d', new Date(subject.ngay_thi)); // "YYYY-MM-DD"
+      
+      const subjectDateStr = parseVietnameseDate(subject.ngay_thi); // "YYYY-MM-DD"
+      console.log(subjectDateStr);
 
-      // Get start and end times from the periods object (defaults to "00:00" if not found)
       const startTime = subject.gio_bat_dau;
-      const endTime = subject.gio_bat_dau + subject.phut;
+      const endTime = addMinutes(startTime, subject.so_phut)
 
       // Create Date objects by combining the lesson date and the time strings.
       // We build an ISO string in the format "YYYY-MM-DDTHH:mm:ss".
       // This will work similarly to Python's datetime.strptime.
       const startDate = `${subjectDateStr}T${startTime}:00`;
       const endDate = `${subjectDateStr}T${endTime}:00`;
-      // console.log(startDate, endDate);
+      console.log(startDate, endDate)
       // Add event to calendar
       calendar.createEvent({
         start: startDate,
         end: endDate,
         summary: subject.ten_mon,
-        location: `${subject.ma_phong}-${subject.Dia_diem_thi}`,
-        description: `Ghép thi: ${subject.ghep_thi}\nTổ thi: ${subject.to_thi}\nMã nhóm: ${subject.nhom_thi}\Sĩ sô: ${subject.si_so}`,
+        location: `${subject.ma_phong} - ${subject.dia_diem_thi}`,
+        description: `Ghép thi: ${subject.ghep_thi}\nTổ thi: ${subject.to_thi}\nMã nhóm: ${subject.nhom_thi}\nSĩ số: ${subject.si_so}\n`,
         timezone: 'Asia/Ho_Chi_Minh'
       });
     });
 
     // Generate ICS content
     let icsContent = calendar.toString();
-
+    console.log(icsContent, res)
     res.set('Content-Type', 'text/calendar');
     res.set('Content-Disposition', 'attachment; filename=tkb_exported.ics');
     return res.send(icsContent);
-  } catch (error) {
+  } catch ( error ) {
     console.error('ICS generation error:', error.message);
     return res.status(500).json({ success: false, message: 'Server error generating ICS file' });
   }
@@ -420,15 +447,24 @@ app.post(`/api/google-calendar-urls/exam`, (req, res) => {
 
     // Store event data for Google Calendar
     const events = [];
-
+    function addMinutes(timeStr, minutesToAdd) {
+      // Chuyển chuỗi thời gian thành đối tượng Date
+      let [hoursStr, minutesStr] = timeStr.split(':');
+      let hours = parseInt(hoursStr); //7
+      let minutes = parseInt(minutesStr); //30
+      minutes += parseInt(minutesToAdd); // 30 + 30 = 60
+      hours += Math.floor(minutes / 60);
+      minutes %= 60;
+      hours %= 24;
+      return hours + ':' + minutes.toString().padStart(2, '0');
+    }
     // Iterate through weeks
     examData.data.ds_lich_thi.forEach(subject => {
       // Iterate through scheduled classes
       const subjectDateStr = strftime('%Y-%m-%d', new Date(subject.ngay_thi)); // "YYYY-MM-DD"
 
-      // Get start and end times from the periods object (defaults to "00:00" if not found)
       const startTime = subject.gio_bat_dau;
-      const endTime = subject.gio_bat_dau + subject.phut;
+      const endTime = addMinutes(startTime, subject.so_phut)
 
       // Create Date objects by combining the lesson date and the time strings.
       // We build an ISO string in the format "YYYY-MM-DDTHH:mm:ss".
@@ -439,8 +475,8 @@ app.post(`/api/google-calendar-urls/exam`, (req, res) => {
         start: startDate,
         end: endDate,
         summary: subject.ten_mon,
-        location: `${subject.ma_phong}-${subject.Dia_diem_thi}`,
-        description: `Ghép thi: ${subject.ghep_thi}\nTổ thi: ${subject.to_thi}\nMã nhóm: ${subject.nhom_thi}\Sĩ sô: ${subject.si_so}`,
+        location: `${subject.ma_phong}-${subject.dia_diem_thi}`,
+        description: `Ghép thi: ${subject.ghep_thi}\nTổ thi: ${subject.to_thi}\nMã nhóm: ${subject.nhom_thi}\nSĩ số: ${subject.si_so}\n`,
         timezone: 'Asia/Ho_Chi_Minh'
       };
       events.push(event);
@@ -448,11 +484,12 @@ app.post(`/api/google-calendar-urls/exam`, (req, res) => {
 
     // Return the event data
     return res.json({ success: true, events });
-  } catch (error) {
+  } catch { error } {
     console.error('Google Calendar URL generation error:', error.message);
     return res.status(500).json({ success: false, message: 'Server error generating Google Calendar URLs' });
   }
 });
+
 // Start server
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
