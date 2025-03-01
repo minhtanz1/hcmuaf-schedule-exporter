@@ -248,25 +248,26 @@ app.post(`/api/fetch-schedule`, async (req, res) => {
 // Generate ICS file endpoint
 app.post(`/api/generate-ics`, (req, res) => {
   try {
-    const { scheduleData } = req.body;
+    const scheduleData = req.body;
 
     if (!scheduleData || !scheduleData.data) {
       return res.status(400).json({ success: false, message: 'Schedule data is required' });
     }
-
+    console.log(scheduleData);
+    
     // Create calendar
     const calendar = ical({ name: 'TKB NLU' });
 
     // Define lesson periods by their start and end times
     const periods = {};
-    scheduleData.data.ds_tiet_trong_ngay.forEach(tiet => {
+    scheduleData.data.data.ds_tiet_trong_ngay.forEach(tiet => {
       if (tiet.gio_bat_dau) {
         periods[tiet.tiet] = [tiet.gio_bat_dau, tiet.gio_ket_thuc];
       }
     });
 
     // Iterate through weeks
-    scheduleData.data.ds_tuan_tkb.forEach(week => {
+    scheduleData.data.data.ds_tuan_tkb.forEach(week => {
       // Iterate through scheduled classes
       week.ds_thoi_khoa_bieu.forEach(lesson => {
         const lessonDateStr = strftime('%Y-%m-%d', new Date(lesson.ngay_hoc.split('T')[0])); // "YYYY-MM-DD"
@@ -294,7 +295,7 @@ app.post(`/api/generate-ics`, (req, res) => {
 
     // Generate ICS content
     let icsContent = calendar.toString();
-
+    
 
     res.set('Content-Type', 'text/calendar');
     res.set('Content-Disposition', 'attachment; filename=tkb_exported.ics');
@@ -304,66 +305,64 @@ app.post(`/api/generate-ics`, (req, res) => {
     return res.status(500).json({ success: false, message: 'Server error generating ICS file' });
   }
 });
-app.post(`/api/google-calendar-urls`, (req, res) => {
-  try {
-    const { scheduleData } = req.body;
+// app.post(`/api/google-calendar-urls`, (req, res) => {
+//   try {
+//     const { scheduleData } = req.body;
 
-    if (!scheduleData || !scheduleData.data) {
-      return res.status(400).json({ success: false, message: 'Schedule data is required' });
-    }
+//     if (!scheduleData || !scheduleData.data) {
+//       return res.status(400).json({ success: false, message: 'Schedule data is required' });
+//     }
 
-    // Define lesson periods by their start and end times
-    const periods = {};
-    scheduleData.data.ds_tiet_trong_ngay.forEach(tiet => {
-      if (tiet.gio_bat_dau) {
-        periods[tiet.tiet] = [tiet.gio_bat_dau, tiet.gio_ket_thuc];
-      }
-    });
+//     // Define lesson periods by their start and end times
+//     const periods = {};
+//     scheduleData.data.ds_tiet_trong_ngay.forEach(tiet => {
+//       if (tiet.gio_bat_dau) {
+//         periods[tiet.tiet] = [tiet.gio_bat_dau, tiet.gio_ket_thuc];
+//       }
+//     });
 
-    // Store event data for Google Calendar
-    const events = [];
+//     // Store event data for Google Calendar
+//     const events = [];
 
-    // Iterate through weeks
-    scheduleData.data.ds_tuan_tkb.forEach(week => {
-      // Iterate through scheduled classes
-      week.ds_thoi_khoa_bieu.forEach(lesson => {
-        const lessonDateStr = strftime('%Y-%m-%d', new Date(lesson.ngay_hoc.split('T')[0])); // "YYYY-MM-DD"
+//     // Iterate through weeks
+//     scheduleData.data.ds_tuan_tkb.forEach(week => {
+//       // Iterate through scheduled classes
+//       week.ds_thoi_khoa_bieu.forEach(lesson => {
+//         const lessonDateStr = strftime('%Y-%m-%d', new Date(lesson.ngay_hoc.split('T')[0])); // "YYYY-MM-DD"
 
-        // Get start and end times from the periods object (defaults to "00:00" if not found)
-        const [startTime, endTime] = periods[lesson.tiet_bat_dau] || ['00:00', '00:00'];
+//         // Get start and end times from the periods object (defaults to "00:00" if not found)
+//         const [startTime, endTime] = periods[lesson.tiet_bat_dau] || ['00:00', '00:00'];
 
-        // Create Date objects by combining the lesson date and the time strings.
-        // We build an ISO string in the format "YYYY-MM-DDTHH:mm:ss".
-        // This will work similarly to Python's datetime.strptime.
-        const startDate = `${lessonDateStr}T${startTime}:00`;
-        const endDate = `${lessonDateStr}T${endTime}:00`;
-        // console.log(startDate, endDate)
-        // Create event object
-        const event = {
-          summary: lesson.ten_mon,
-          start: startDate,
-          end: endDate,
-          location: lesson.ma_phong,
-          description: `Giảng viên: ${lesson.ten_giang_vien}\nMã lớp: ${lesson.ma_lop}\nMã nhóm: ${lesson.ma_nhom}\nThông tin tuần: ${week.thong_tin_tuan}`,
-          timezone: 'Asia/Ho_Chi_Minh'
-        };
-        events.push(event);
-      });
-    });
+//         // Create Date objects by combining the lesson date and the time strings.
+//         // We build an ISO string in the format "YYYY-MM-DDTHH:mm:ss".
+//         // This will work similarly to Python's datetime.strptime.
+//         const startDate = `${lessonDateStr}T${startTime}:00`;
+//         const endDate = `${lessonDateStr}T${endTime}:00`;
+//         // console.log(startDate, endDate)
+//         // Create event object
+//         const event = {
+//           summary: lesson.ten_mon,
+//           start: startDate,
+//           end: endDate,
+//           location: lesson.ma_phong,
+//           description: `Giảng viên: ${lesson.ten_giang_vien}\nMã lớp: ${lesson.ma_lop}\nMã nhóm: ${lesson.ma_nhom}\nThông tin tuần: ${week.thong_tin_tuan}`,
+//           timezone: 'Asia/Ho_Chi_Minh'
+//         };
+//         events.push(event);
+//       });
+//     });
 
-    // Return the event data
-    return res.json({ success: true, events });
-  } catch { error } {
-    console.error('Google Calendar URL generation error:', error.message);
-    return res.status(500).json({ success: false, message: 'Server error generating Google Calendar URLs' });
-  }
-});
+//     // Return the event data
+//     return res.json({ success: true, events });
+//   } catch { error } {
+//     console.error('Google Calendar URL generation error:', error.message);
+//     return res.status(500).json({ success: false, message: 'Server error generating Google Calendar URLs' });
+//   }
+// });
 
 app.post(`/api/generate-ics/exam`,  (req, res) => {
   try {
     const examData = req.body;
-    // console.log(examData.data);
-
 
     if (!examData) {
       return res.status(400).json({ success: false, message: 'Schedule data is required' });
@@ -371,7 +370,6 @@ app.post(`/api/generate-ics/exam`,  (req, res) => {
 
     // Create calendar
     const calendar = ical({ name: 'EXAM NLU' });
-
 
     // Iterate through subject
     function addMinutes(timeStr, minutesToAdd) {
@@ -437,58 +435,58 @@ app.post(`/api/generate-ics/exam`,  (req, res) => {
     return res.status(500).json({ success: false, message: 'Server error generating ICS file' });
   }
 });
-app.post(`/api/google-calendar-urls/exam`, (req, res) => {
-  try {
-    const { examData } = req.body;
+// app.post(`/api/google-calendar-urls/exam`, (req, res) => {
+//   try {
+//     const { examData } = req.body;
 
-    if (!examData || !examData.data) {
-      return res.status(400).json({ success: false, message: 'Schedule data is required' });
-    }
+//     if (!examData || !examData.data) {
+//       return res.status(400).json({ success: false, message: 'Schedule data is required' });
+//     }
 
-    // Store event data for Google Calendar
-    const events = [];
-    function addMinutes(timeStr, minutesToAdd) {
-      // Chuyển chuỗi thời gian thành đối tượng Date
-      let [hoursStr, minutesStr] = timeStr.split(':');
-      let hours = parseInt(hoursStr); //7
-      let minutes = parseInt(minutesStr); //30
-      minutes += parseInt(minutesToAdd); // 30 + 30 = 60
-      hours += Math.floor(minutes / 60);
-      minutes %= 60;
-      hours %= 24;
-      return hours + ':' + minutes.toString().padStart(2, '0');
-    }
-    // Iterate through weeks
-    examData.data.ds_lich_thi.forEach(subject => {
-      // Iterate through scheduled classes
-      const subjectDateStr = strftime('%Y-%m-%d', new Date(subject.ngay_thi)); // "YYYY-MM-DD"
+//     // Store event data for Google Calendar
+//     const events = [];
+//     function addMinutes(timeStr, minutesToAdd) {
+//       // Chuyển chuỗi thời gian thành đối tượng Date
+//       let [hoursStr, minutesStr] = timeStr.split(':');
+//       let hours = parseInt(hoursStr); //7
+//       let minutes = parseInt(minutesStr); //30
+//       minutes += parseInt(minutesToAdd); // 30 + 30 = 60
+//       hours += Math.floor(minutes / 60);
+//       minutes %= 60;
+//       hours %= 24;
+//       return hours + ':' + minutes.toString().padStart(2, '0');
+//     }
+//     // Iterate through weeks
+//     examData.data.ds_lich_thi.forEach(subject => {
+//       // Iterate through scheduled classes
+//       const subjectDateStr = strftime('%Y-%m-%d', new Date(subject.ngay_thi)); // "YYYY-MM-DD"
 
-      const startTime = subject.gio_bat_dau;
-      const endTime = addMinutes(startTime, subject.so_phut)
+//       const startTime = subject.gio_bat_dau;
+//       const endTime = addMinutes(startTime, subject.so_phut)
 
-      // Create Date objects by combining the lesson date and the time strings.
-      // We build an ISO string in the format "YYYY-MM-DDTHH:mm:ss".
-      // This will work similarly to Python's datetime.strptime.
-      const startDate = `${subjectDateStr}T${startTime}:00`;
-      const endDate = `${subjectDateStr}T${endTime}:00`;
-      const event = {
-        start: startDate,
-        end: endDate,
-        summary: subject.ten_mon,
-        location: `${subject.ma_phong}-${subject.dia_diem_thi}`,
-        description: `Ghép thi: ${subject.ghep_thi}\nTổ thi: ${subject.to_thi}\nMã nhóm: ${subject.nhom_thi}\nSĩ số: ${subject.si_so}\n`,
-        timezone: 'Asia/Ho_Chi_Minh'
-      };
-      events.push(event);
-    });
+//       // Create Date objects by combining the lesson date and the time strings.
+//       // We build an ISO string in the format "YYYY-MM-DDTHH:mm:ss".
+//       // This will work similarly to Python's datetime.strptime.
+//       const startDate = `${subjectDateStr}T${startTime}:00`;
+//       const endDate = `${subjectDateStr}T${endTime}:00`;
+//       const event = {
+//         start: startDate,
+//         end: endDate,
+//         summary: subject.ten_mon,
+//         location: `${subject.ma_phong}-${subject.dia_diem_thi}`,
+//         description: `Ghép thi: ${subject.ghep_thi}\nTổ thi: ${subject.to_thi}\nMã nhóm: ${subject.nhom_thi}\nSĩ số: ${subject.si_so}\n`,
+//         timezone: 'Asia/Ho_Chi_Minh'
+//       };
+//       events.push(event);
+//     });
 
-    // Return the event data
-    return res.json({ success: true, events });
-  } catch { error } {
-    console.error('Google Calendar URL generation error:', error.message);
-    return res.status(500).json({ success: false, message: 'Server error generating Google Calendar URLs' });
-  }
-});
+//     // Return the event data
+//     return res.json({ success: true, events });
+//   } catch { error } {
+//     console.error('Google Calendar URL generation error:', error.message);
+//     return res.status(500).json({ success: false, message: 'Server error generating Google Calendar URLs' });
+//   }
+// });
 
 // Start server
 app.listen(PORT, () => {
