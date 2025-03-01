@@ -589,7 +589,7 @@
         // First, get the ICS content
         const endpoint = examsemSelect.value === 'schedule' ? '/api/generate-ics' : '/api/generate-ics/exam';
         const data = examsemSelect.value === 'schedule' ? scheduleData : examData;
-        console.log(JSON.stringify({ data }))
+        // console.log(JSON.stringify({ data }))
         // Fetch ICS content
         const response = await fetch(endpoint, {
           method: 'POST',
