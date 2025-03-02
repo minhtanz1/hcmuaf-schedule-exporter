@@ -11,7 +11,7 @@ Chào mừng bạn đến với công cụ hỗ trợ chuyển đổi thời kh�
     *   Điền **Mã số sinh viên** vào ô "Mã số sinh viên".
     *   Điền **Mật khẩu** tài khoản dkmh của bạn vào ô "Mật khẩu".
 
-    ![Ảnh giao diện Bước 1: Đăng nhập, form đăng nhập với 2 ô input và nút "Đăng nhập"](./images/step1_login_form.png)  *(Thay thế `./images/step1_login_form.png` bằng đường dẫn ảnh chụp màn hình form đăng nhập)*
+    ![Ảnh giao diện Bước 1: Đăng nhập, form đăng nhập với 2 ô input và nút "Đăng nhập"](./images/step1_login_form.png) 
 
 3.  **Nhấn nút "Đăng nhập":** Sau khi nhập đầy đủ thông tin, nhấn vào nút **"Đăng nhập"**.
 
@@ -26,7 +26,7 @@ Chào mừng bạn đến với công cụ hỗ trợ chuyển đổi thời kh�
     *   Chọn **"TKB"** nếu bạn muốn chuyển thời khóa biểu theo dạng tuần.
     *   Chọn **"Lịch thi"** nếu bạn muốn chuyển lịch thi.
 
-    ![Ảnh giao diện Bước 2: Chọn loại lịch, hộp chọn "TKB" hoặc "Lịch thi" và nút "Kế tiếp"](./images/step2_choose_type.png) *(Thay thế `./images/step2_choose_type.png` bằng đường dẫn ảnh chụp màn hình giao diện chọn loại lịch)*
+    ![Ảnh giao diện Bước 2: Chọn loại lịch, hộp chọn "TKB" hoặc "Lịch thi" và nút "Kế tiếp"](./images/step2_choose_type.png)
 
 3.  **Nhấn nút "Kế tiếp":** Sau khi chọn loại lịch mong muốn, nhấn vào nút **"Kế tiếp"**.
 
@@ -42,7 +42,7 @@ Tùy thuộc vào lựa chọn ở **Bước 2**, bạn sẽ chuyển đến m�
     *   Sử dụng hộp chọn **"Chọn học kì tkb"**.
     *   Chọn học kỳ bạn muốn chuyển đổi sang Google Calendar từ danh sách các học kỳ được tải về.
 
-    ![Ảnh giao diện Bước 2.1 (TKB): Chọn học kỳ, hộp chọn học kỳ TKB và nút "Lấy TKB"](./images/step2_1_tkb_semester.png) *(Thay thế `./images/step2_1_tkb_semester.png` bằng đường dẫn ảnh chụp màn hình chọn học kỳ TKB)*
+    ![Ảnh giao diện Bước 2.1 (TKB): Chọn học kỳ, hộp chọn học kỳ TKB và nút "Lấy TKB"](./images/step2_1_tkb_semester.png)
 
 3.  **Nhấn nút "Lấy TKB":** Sau khi chọn học kỳ, nhấn vào nút **"Lấy TKB"**. Hệ thống sẽ tải dữ liệu thời khóa biểu của học kỳ đã chọn.
 
@@ -54,8 +54,7 @@ Tùy thuộc vào lựa chọn ở **Bước 2**, bạn sẽ chuyển đến m�
     *   Sử dụng hộp chọn **"Chọn học kì lịch thi"**.
     *   Chọn học kỳ bạn muốn chuyển đổi lịch thi sang Google Calendar từ danh sách các học kỳ được tải về.
 
-    ![Ảnh giao diện Bước 2.1 (Lịch Thi): Chọn học kỳ, hộp chọn học kỳ lịch thi và nút "Lấy TKB"](./images/step2_1_exam_semester.png) *(Thay thế `./images/step2_1_exam_semester.png` bằng đường dẫn ảnh chụp màn hình chọn học kỳ lịch thi)*
-
+    ![Ảnh giao diện Bước 2.1 (Lịch Thi): Chọn học kỳ, hộp chọn học kỳ lịch thi và nút "Lấy TKB"](./images/step2_1_exam_semester.png)
 3.  **Nhấn nút "Lấy TKB":**  Mặc dù nút này có nhãn "Lấy TKB", nhưng khi bạn chọn "Lịch thi", hệ thống sẽ tải dữ liệu lịch thi của học kỳ đã chọn. Nhấn vào nút **"Lấy TKB"** để tiếp tục.
 
 ## Bước 3: Đưa vào Google Calendar
@@ -66,7 +65,7 @@ Tùy thuộc vào lựa chọn ở **Bước 2**, bạn sẽ chuyển đến m�
 
     *   **Tải file ICS:** Nhấn nút **"Tải file Ics"** để tải file ICS về máy tính của bạn. Bạn có thể sử dụng file này để nhập lịch vào bất kỳ ứng dụng lịch nào hỗ trợ định dạng ICS, bao gồm Google Calendar, Outlook Calendar, v.v.
 
-        ![Ảnh giao diện Bước 3: Nút "Tải file Ics" và "Thêm vào Google Calendar"](./images/step3_download_import_buttons.png) *(Thay thế `./images/step3_download_import_buttons.png` bằng đường dẫn ảnh chụp màn hình các nút tải và nhập)*
+        ![Ảnh giao diện Bước 3: Nút "Tải file Ics" và "Thêm vào Google Calendar"](./images/step3_download_import_buttons.png)
 
     *   **Thêm vào Google Calendar:** Nhấn nút **"Thêm vào Google Calendar"**. Nút này sẽ thực hiện đồng thời việc tải file ICS và mở trang hướng dẫn nhập lịch vào Google Calendar (xem phần **Hướng Dẫn Nhập Lịch vào Google Calendar** bên dưới).
 
@@ -81,7 +80,7 @@ Tùy thuộc vào lựa chọn ở **Bước 2**, bạn sẽ chuyển đến m�
     *   Nhấn vào biểu tượng **"+"** (Thêm lịch khác) và chọn **"Tạo lịch mới"** hoặc **"Create new calendar"**.
     *   Đặt tên cho lịch mới (ví dụ: "TKB HCMUAF" hoặc "Lịch Thi HCMUAF") và tùy chỉnh các thiết lập khác nếu muốn. Nhấn **"Tạo lịch"** hoặc **"Create calendar"**.
 
-    ![Ảnh giao diện Google Calendar, menu "Lịch khác" với nút "+" và tùy chọn "Tạo lịch mới"](./images/google_calendar_create_calendar.png) *(Thay thế `./images/google_calendar_create_calendar.png` bằng đường dẫn ảnh chụp màn hình Google Calendar menu tạo lịch mới)*
+    ![Ảnh giao diện Google Calendar, menu "Lịch khác" với nút "+" và tùy chọn "Tạo lịch mới"](./images/google_calendar_create_calendar.png) 
 
 3.  **Nhập lịch:**
     *   Sau khi tạo lịch mới (hoặc nếu bạn muốn nhập vào lịch hiện có), ở cột bên trái, tìm mục **"Cài đặt"** (biểu tượng bánh răng) và chọn **"Cài đặt"** hoặc **"Settings"**.
@@ -91,7 +90,7 @@ Tùy thuộc vào lựa chọn ở **Bước 2**, bạn sẽ chuyển đến m�
     *   Chọn lịch mà bạn muốn nhập vào từ danh sách thả xuống **"Thêm vào lịch"** hoặc **"Add to calendar"**. Nếu bạn đã tạo lịch mới ở bước 2, hãy chọn lịch đó.
     *   Nhấn nút **"Nhập"** hoặc **"Import"**.
 
-    ![Ảnh giao diện Google Calendar, trang "Nhập & Xuất" với các tùy chọn nhập file ICS](./images/google_calendar_import_ics.png) *(Thay thế `./images/google_calendar_import_ics.png` bằng đường dẫn ảnh chụp màn hình Google Calendar trang nhập lịch ICS)*
+    ![Ảnh giao diện Google Calendar, trang "Nhập & Xuất" với các tùy chọn nhập file ICS](./images/google_calendar_import_ics.png) 
 
 4.  **Hoàn tất nhập lịch:** Google Calendar sẽ tiến hành nhập các sự kiện từ file ICS vào lịch bạn đã chọn. Sau khi quá trình nhập hoàn tất, bạn sẽ thấy thời khóa biểu hoặc lịch thi hiển thị trên Google Calendar của mình.
 
