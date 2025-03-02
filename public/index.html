@@ -1,773 +1,178 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HCMUAF Schedule Exporter</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <!-- <link rel="stylesheet" type="text/css" href="./styles.css"> -->
-  <style>
-    body {
-      display: flex;
-      flex-direction: column;
-      min-height: 100vh;
-    }
-    .container {
-      max-width: 800px;
-    }
-
-    .step {
-      display: none;
-    }
-
-    .step.active {
-      display: block;
-    }
-
-    .loading {
-      display: none;
-      text-align: center;
-      margin: 20px 0;
-    }
-
-    .spinner-border {
-      width: 3rem;
-      height: 3rem;
-    }
-
-    .btn-google {
-      background-color: #4285F4;
-      color: white;
-    }
-
-    .btn-google:hover {
-      background-color: #357ae8;
-      color: white;
-    }
-
-    .action-buttons {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    .instructions-panel {
-      background-color: #f8f9fa;
-      border: 1px solid #dee2e6;
-      border-radius: 0.375rem;
-      padding: 1rem;
-      margin-top: 1rem;
-      display: none;
-    }
-
-    .instructions-list {
-      padding-left: 1.5rem;
-    }
-
-    .instructions-list li {
-      margin-bottom: 0.5rem;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HCMUAF Schedule Exporter</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="./styles.css"> <!-- Link to CSS file -->
 </head>
-
 <body>
-  <div class="container mt-5">
-    <h1 class="text-center mb-4">Chuyển TKB từ trang đkmh sang Google Calendar</h1>
-    <div class="card shadow-sm">
-      <div class="card-body">
-        <!-- Step 1: Login Form -->
-        <div id="step1" class="step active">
-          <h3>Bước 1: Đăng nhập</h3>
-          <form id="loginForm">
-            <div class="mb-3">
-              <label for="username" class="form-label">Mã số sinh viên</label>
-              <input type="text" class="form-control" id="username" required>
-            </div>
-            <div class="mb-3">
-              <label for="password" class="form-label">Mật khẩu</label>
-              <input type="password" class="form-control" id="password" required>
-            </div>
-            <button type="submit" class="btn btn-primary">Đăng nhập</button>
-          </form>
-        </div>
+    <div class="container mt-5">
+        <h1 class="text-center mb-4">Chuyển TKB từ trang đkmh sang Google Calendar</h1>
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <!-- Step 1: Login Form -->
+                <div id="step1" class="step active">
+                    <h3>Bước 1: Đăng nhập</h3>
+                    <form id="loginForm">
+                        <div class="mb-3">
+                            <label for="username" class="form-label">Mã số sinh viên</label>
+                            <input type="text" class="form-control" id="username" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Mật khẩu</label>
+                            <input type="password" class="form-control" id="password" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Đăng nhập</button>
+                    </form>
+                </div>
 
-        <!-- Step 2: Choose exam & semester schedule  -->
-        <div id="step2" class="step">
-          <h3>Bước 2: Chọn thời khóa biểu hoặc lịch thi</h3>
-          <form id="examsemForm">
-            <div class="mb-3">
-              <label for="examsem" class="form-label">Chọn thời khóa biểu hoặc lịch thi</label>
-              <select class="form-select" id="examsem" required>
-                <option value="schedule">TKB</option>
-                <option value="exam">Lịch thi</option>
-              </select>
-              <div class="form-text">Chọn tkb và lịch thi mà bạn muốn chuyển sang Google Calendar</div>
-            </div>
-            <button type="submit" class="btn btn-primary">Kế tiếp </button>
-          </form>
-        </div>
-        <!-- Step 2.1: Choose schedule  -->
-        <div id="step21" class="step">
-          <h3>Chọn học kì (TKB)</h3>
-          <form id="semesterForm">
-            <div class="mb-3">
-              <label for="semester" class="form-label">Chọn học kì tkb</label>
-              <select class="form-select" id="semester" required>
-                <option value="" disabled selected>Đang tải học kì...</option>
-              </select>
-              <div class="form-text">Chọn học kì mà bạn muốn chuyển sang Google Calendar</div>
-            </div>
-            <button type="submit" class="btn btn-primary">Lấy TKB</button>
-          </form>
-        </div>
-        <!-- Step 2.1: Choose exam  -->
-        <div id="step22" class="step">
-          <h3>Chọn học kì (Lịch thi)</h3>
-          <form id="examForm">
-            <div class="mb-3">
-              <label for="exam" class="form-label">Chọn học kì lịch thi </label>
-              <select class="form-select" id="exam" required>
-                <option value="" disabled selected>Đang tải học kì...</option>
-              </select>
-              <div class="form-text">Chọn học kì mà bạn muốn chuyển sang Google Calendar</div>
-            </div>
-            <button type="submit" class="btn btn-primary">Lấy TKB</button>
-          </form>
-        </div>
-        <!-- Step 3: Download Calendar -->
-        <div id="step3" class="step">
-          <h3>Bước 3: Đưa vào Google Calendar</h3>
-          <p id="step3Message"></p>
-          <div class="action-buttons">
-            <button id="downloadBtn" class="btn btn-success">
-              <i class="bi bi-download"></i> Tải file Ics
-            </button>
-            <button id="importGoogleBtn" class="btn btn-google">
-              <i class="bi bi-google"></i> Thêm vào Google Calendar
-            </button>
-          </div>
-          <div class="mt-3">
-            <button id="startOverBtn" class="btn btn-outline-secondary">Bắt đầu lại</button>
-          </div>
-        </div>
+                <!-- Step 2: Choose exam & semester schedule  -->
+                <div id="step2" class="step">
+                    <h3>Bước 2: Chọn thời khóa biểu hoặc lịch thi</h3>
+                    <form id="examsemForm">
+                        <div class="mb-3">
+                            <label for="examsem" class="form-label">Chọn thời khóa biểu hoặc lịch thi</label>
+                            <select class="form-select" id="examsem" required>
+                                <option value="schedule">TKB</option>
+                                <option value="exam">Lịch thi</option>
+                            </select>
+                            <div class="form-text">Chọn tkb và lịch thi mà bạn muốn chuyển sang Google Calendar</div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Kế tiếp </button>
+                    </form>
+                </div>
+                <!-- Step 2.1: Choose schedule  -->
+                <div id="step21" class="step">
+                    <h3>Chọn học kì (TKB)</h3>
+                    <form id="semesterForm">
+                        <div class="mb-3">
+                            <label for="semester" class="form-label">Chọn học kì tkb</label>
+                            <select class="form-select" id="semester" required>
+                                <option value="" disabled selected>Đang tải học kì...</option>
+                            </select>
+                            <div class="form-text">Chọn học kì mà bạn muốn chuyển sang Google Calendar</div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Lấy TKB</button>
+                    </form>
+                </div>
+                <!-- Step 2.1: Choose exam  -->
+                <div id="step22" class="step">
+                    <h3>Chọn học kì (Lịch thi)</h3>
+                    <form id="examForm">
+                        <div class="mb-3">
+                            <label for="exam" class="form-label">Chọn học kì lịch thi </label>
+                            <select class="form-select" id="exam" required>
+                                <option value="" disabled selected>Đang tải học kì...</option>
+                            </select>
+                            <div class="form-text">Chọn học kì mà bạn muốn chuyển sang Google Calendar</div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Lấy TKB</button>
+                    </form>
+                </div>
+                <!-- Step 3: Download Calendar -->
+                <div id="step3" class="step">
+                    <h3>Bước 3: Đưa vào Google Calendar</h3>
+                    <p id="step3Message"></p>
+                    <div class="action-buttons">
+                        <button id="downloadBtn" class="btn btn-success">
+                            <i class="bi bi-download"></i> Tải file Ics
+                        </button>
+                        <button id="importGoogleBtn" class="btn btn-google">
+                            <i class="bi bi-google"></i> Thêm vào Google Calendar
+                        </button>
+                    </div>
+                    <div class="mt-3">
+                        <button id="startOverBtn" class="btn btn-outline-secondary">Bắt đầu lại</button>
+                    </div>
+                </div>
 
-        <script>
-          document.getElementById('examsemForm').addEventListener('submit', function (event) {
-            event.preventDefault(); // Ngăn chặn submit form mặc định
-            const examsemLabel = document.querySelector('#examsem').selectedOptions[0].label;
-            document.getElementById('step3Message').textContent = `${examsemLabel} của bạn đã được lấy thành công!`;
-          });
-        </script>
-      </div>
-      <!-- Google Calendar Import Instructions -->
-      <div id="googleCalendarInstructions" class="step instructions-panel">
-        <h4>Làm thế nào để nhập lịch vào Google Calendar</h4>
-        <ol class="instructions-list">
-          <li>Vào trang tạo lịch hoặc nhấn "Thêm vào Google Calendar ở phía trên"</li>
-          <li>Tạo một lịch mới có tên bất kỳ trên trang đã mở</li>
-          <li>Sau khi tạo xong, nhấp vào "Nhập & Xuất" (Import & Export) ở menu bên trái</li>
-          <li>Nhấp vào "Chọn tệp từ máy tính của bạn" và chọn tệp ICS bạn đã tải xuống</li>
-          <li>Chọn lịch mà bạn vừa đặt ở bước 2 từ danh sách thả xuống</li>
-          <li>Chọn Nhập để hoàn thành</li>
-        </ol>
-        <button id="hideInstructionsBtn" class="btn btn-outline-secondary btn-sm mt-2">Ẩn hướng dẫn</button>
-      </div>
+            </div>
+            <!-- Google Calendar Import Instructions -->
+            <div id="googleCalendarInstructions" class="step instructions-panel">
+                <h4>Làm thế nào để nhập lịch vào Google Calendar</h4>
+                <ol class="instructions-list">
+                    <li>Vào trang tạo lịch hoặc nhấn "Thêm vào Google Calendar ở phía trên"</li>
+                    <li>Tạo một lịch mới có tên bất kỳ trên trang đã mở</li>
+                    <li>Sau khi tạo xong, nhấp vào "Nhập & Xuất" (Import & Export) ở menu bên trái</li>
+                    <li>Nhấp vào "Chọn tệp từ máy tính của bạn" và chọn tệp ICS bạn đã tải xuống</li>
+                    <li>Chọn lịch mà bạn vừa đặt ở bước 2 từ danh sách thả xuống</li>
+                    <li>Chọn Nhập để hoàn thành</li>
+                </ol>
+                <button id="hideInstructionsBtn" class="btn btn-outline-secondary btn-sm mt-2">Ẩn hướng dẫn</button>
+            </div>
 
-      <!-- Loading Indicator -->
-      <div id="loading" class="loading">
-        <div class="spinner-border text-primary" role="status">
-          <span class="visually-hidden">Đang tải...</span>
+            <!-- Loading Indicator -->
+            <div id="loading" class="loading">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Đang tải...</span>
+                </div>
+                <p class="mt-2" id="loadingText">Đang xử lí...</p>
+            </div>
+
+            <!-- Error Display -->
+            <div id="error" class="alert alert-danger mt-3" style="display: none;"></div>
         </div>
-        <p class="mt-2" id="loadingText">Đang xử lí...</p>
-      </div>
-
-      <!-- Error Display -->
-      <div id="error" class="alert alert-danger mt-3" style="display: none;"></div>
     </div>
-  </div>
-  </div>
-
-  <script>
-    
-    // Global variables
-    let accessToken = '';
-    // let scheduleData = null;
-    let calendarEvents = [];
-    // let examData = null;
-    // DOM Elements
-    const step1 = document.getElementById('step1');
-    const step2 = document.getElementById('step2');
-    const step21 = document.getElementById('step21');
-    const step22 = document.getElementById('step22');
-    const step3 = document.getElementById('step3');
-    const loginForm = document.getElementById('loginForm');
-    const semesterForm = document.getElementById('semesterForm');
-    const examsemSelect = document.getElementById('examsem');
-    const downloadBtn = document.getElementById('downloadBtn');
-    const importGoogleBtn = document.getElementById('importGoogleBtn');
-    const startOverBtn = document.getElementById('startOverBtn');
-    const loading = document.getElementById('loading');
-    const loadingText = document.getElementById('loadingText');
-    const errorEl = document.getElementById('error');
-    // const baseURL = `${window.location.protocol}//${window.location.host}`;
-    // Helper functions
-    function showStep(step) {
-      // Hide all steps
-      [step1, step2, step21, step22, step3].forEach(el => {
-        el.classList.remove('active');
-      });
-      // Show requested step
-      step.classList.add('active');
-    }
-
-    function showLoading(message = 'Đang xử lí...') {
-      loading.style.display = 'block';
-      loadingText.textContent = message;
-    }
-
-    function hideLoading() {
-      loading.style.display = 'none';
-    }
-
-    function showError(message) {
-      errorEl.textContent = message;
-      errorEl.style.display = 'block';
-    }
-
-    function hideError() {
-      errorEl.style.display = 'none';
-    }
-    async function fetchSemesters() {
-      hideError();
-      showLoading('Đang tìm kiếm các học kỳ có sẵn...');
-
-      try {
-        const response = await fetch('/api/fetch-semesters', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          // body: JSON.stringify({ access_token: accessToken })
-          body: JSON.stringify({})
-        });
-
-        const data = await response.json();
-
-        if (!response.ok || !data.success) {
-          throw new Error(data.message || 'Không thể lấy học kỳ');
-        }
-
-        const semesterSelect = document.getElementById('semester');
-        semesterSelect.innerHTML = ''; // Clear loading option
-
-        if (data.data && data.data.ds_hoc_ky && data.data.ds_hoc_ky.length > 0) {
-          // Add options for each semester
-          data.data.ds_hoc_ky.forEach(semester => {
-            const option = document.createElement('option');
-            option.value = semester.hoc_ky;
-            option.textContent = semester.ten_hoc_ky;
-            semesterSelect.appendChild(option);
-          });
-        } else {
-          // If no semesters found
-          const option = document.createElement('option');
-          option.value = "";
-          option.textContent = "Không có học kỳ nào có sẵn";
-          option.disabled = true;
-          option.selected = true;
-          semesterSelect.appendChild(option);
-        }
-
-        hideLoading();
-      } catch (error) {
-        console.error('Lỗi tìm nạp học kỳ:', error);
-        hideLoading();
-        showError(error.message || 'Đã xảy ra lỗi khi tải học kỳ');
-
-        // Add a default option if fetch fails
-        const semesterSelect = document.getElementById('semester');
-        semesterSelect.innerHTML = ''; // Clear loading option
-        const option = document.createElement('option');
-        option.value = "00000";
-        option.textContent = "Chọn học kì";
-        semesterSelect.appendChild(option);
-      }
-    }
-    async function fetchSemExam() {
-      hideError();
-      showLoading('Đang tìm kiếm các học kỳ có sẵn...');
-
-      try {
-        const response = await fetch('/api/fetch-semexam', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          // body: JSON.stringify({ access_token: accessToken })
-          body: JSON.stringify({})
-        });
-
-        const data = await response.json();
-        // console.log(data);
-
-        if (!response.ok || !data.success) {
-          throw new Error(data.message || 'Không thể lấy học kỳ');
-        }
-
-        const semesterSelect = document.getElementById('exam');
-        semesterSelect.innerHTML = ''; // Clear loading option
-
-        if (data.data && data.data.ds_hoc_ky && data.data.ds_hoc_ky.length > 0) {
-          // Add options for each semester
-          data.data.ds_hoc_ky.forEach(semester => {
-            const option = document.createElement('option');
-            option.value = semester.hoc_ky;
-            option.textContent = semester.ten_hoc_ky;
-            semesterSelect.appendChild(option);
-          });
-        } else {
-          // If no semesters found
-          const option = document.createElement('option');
-          option.value = "";
-          option.textContent = "Không có học kỳ nào có sẵn";
-          option.disabled = true;
-          option.selected = true;
-          semesterSelect.appendChild(option);
-        }
-
-        hideLoading();
-      } catch (error) {
-        console.error('Lỗi tìm nạp học kỳ:', error);
-        hideLoading();
-        showError(error.message || 'Đã xảy ra lỗi khi tải học kỳ');
-
-        // Add a default option if fetch fails
-        const semesterSelect = document.getElementById('exam');
-        semesterSelect.innerHTML = ''; // Clear loading option
-        const option = document.createElement('option');
-        option.value = "00000";
-        option.textContent = "Chọn học kì";
-        semesterSelect.appendChild(option);
-      }
-    }
-    // Parse ICS to get events for Google Calendar
-    function parseEventsFromIcs(icsContent) {
-      const events = [];
-      const lines = icsContent.split('\n');
-      let currentEvent = null;
-
-      for (let i = 0; i < lines.length; i++) {
-        const line = lines[i].trim();
-
-        if (line === 'BEGIN:VEVENT') {
-          currentEvent = {};
-        } else if (line === 'END:VEVENT' && currentEvent) {
-          events.push(currentEvent);
-          currentEvent = null;
-        } else if (currentEvent) {
-          // Parse event properties
-          if (line.startsWith('SUMMARY:')) {
-            currentEvent.summary = line.substring(8);
-          } else if (line.startsWith('DTSTART:')) {
-            currentEvent.start = formatGoogleCalendarDate(line.substring(8));
-          } else if (line.startsWith('DTEND:')) {
-            currentEvent.end = formatGoogleCalendarDate(line.substring(6));
-          } else if (line.startsWith('LOCATION:')) {
-            currentEvent.location = line.substring(9);
-          } else if (line.startsWith('DESCRIPTION:')) {
-            currentEvent.description = line.substring(12);
-          }
-        }
-      }
-
-      return events;
-    }
-    // Format date for Google Calendar URL
-    function formatGoogleCalendarDate(isoDate) {
-      // ISO 8601 format: YYYY-MM-DDTHH:MM:SS
-      const dateTimeParts = isoDate.split('T');
-      if (dateTimeParts.length !== 2) return '';
-
-      const datePart = dateTimeParts[0]; // Extract the date (YYYY-MM-DD)
-      const timePart = dateTimeParts[1]; // Extract the time (HH:MM:SS)
-
-      const dateComponents = datePart.split('-');
-      const timeComponents = timePart.split(':');
-
-      if (dateComponents.length !== 3 || timeComponents.length !== 3) return '';
-
-      const year = dateComponents[0];
-      const month = dateComponents[1];
-      const day = dateComponents[2];
-      const hour = timeComponents[0];
-      const minute = timeComponents[1];
-      const second = timeComponents[2];
-      return `${year}${month}${day}T${hour}${minute}${second}`;
-    }
-    // Generate Google Calendar URL for a single event
-    function generateGoogleCalendarUrl(event) {
-      const baseUrl = 'https://calendar.google.com/calendar/render';
-      const action = 'TEMPLATE';
-
-      let url = `${baseUrl}?action=${action}`;
-      url += `&text=${encodeURIComponent(event.summary || 'Class')}`;
-
-      if (event.start) url += `&dates=${event.start}`;
-      if (event.end) url += `/${event.end}`;
-      if (event.location) url += `&location=${encodeURIComponent(event.location)}`;
-      if (event.description) url += `&details=${encodeURIComponent(event.description)}`;
-
-      return url;
-    }
-
-    // Create Google Calendar for all events
-    function addToGoogleCalendar(events) {
-      // Verify we have events
-      if (!events || events.length === 0) {
-        showError('Không có sự kiện nào để thêm vào lịch');
-        return;
-      }
-
-      // If too many events, we'll need a different approach
-      if (events.length > 10) {
-        // For many events, use the ICS file approach
-        createGoogleCalendarWithIcs();
-        return;
-      }
-
-      // For a small number of events, open them one by one
-      events.forEach((event, index) => {
-        // Add a small delay between openings to prevent popup blocking
-        setTimeout(() => {
-          window.open(generateGoogleCalendarUrl(event), '_blank');
-        }, index * 500);
-      });
-    }
-
-    // Create a new Google Calendar and import events via ICS
-    function createGoogleCalendarWithIcs() {
-      // Google Calendar import URL
-      const importUrl = 'https://calendar.google.com/calendar/u/0/r/settings/createcalendar';
-
-      // Open the calendar creation page
-      window.open(importUrl, '_blank');
-
-    }
-
-    // Event handlers
-    loginForm.addEventListener('submit', async function (e) {
-      e.preventDefault();
-      hideError();
-
-      const username = document.getElementById('username').value;
-      const password = document.getElementById('password').value;
-
-      if (!username || !password) {
-        showError('Vui lòng nhập cả tên người dùng và mật khẩu');
-        return;
-      }
-
-      showLoading('Đang đăng nhập...');
-
-      try {
-        const response = await fetch('/api/login', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ username, password })
-        });
-
-        const data = await response.json();
-
-        if (!response.ok || !data.success) {
-          throw new Error(data.message || 'Đăng nhập không thành công. Vui lòng kiểm tra thông tin đăng nhập của bạn.');
-        }
-
-        //accessToken = data.access_token;
-        hideLoading();
-
-        showStep(step2);
-      } catch (error) {
-        console.error('Lỗi đăng nhập:', error);
-        hideLoading();
-        showError(error.message || 'Đã xảy ra lỗi trong quá trình đăng nhập');
-      }
-    });
-
-    semesterForm.addEventListener('submit', async function (e) {
-      e.preventDefault();
-      hideError();
-
-      const semester = document.getElementById('semester').value;
-
-      if (!semester) {
-        showError('Vui lòng nhập mã học kỳ');
-        return;
-      }
-
-      showLoading('Đang lấy tkb...');
-
-      try {
-        const response = await fetch('/api/fetch-schedule', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ semester })
-          // body: JSON.stringify({ access_token: accessToken, semester })
-        });
-
-        const data = await response.json();
-
-        if (!response.ok || !data.success) {
-          throw new Error(data.message || 'Không thể lấy tkb');
-        }
-
-        scheduleData = data.data;
-        hideLoading();
-        showStep(step3);
-        document.getElementById('googleCalendarInstructions').style.display = 'block';
-      } catch (error) {
-        console.error('Lỗi tkb tìm nạp:', error);
-        hideLoading();
-        showError(error.message || 'Đã xảy ra lỗi khi lấy lịch trình');
-      }
-    });
-    examsemForm.addEventListener('submit', async function (event) {
-      event.preventDefault();
-      hideError();
-
-      if (examsemSelect.value === 'schedule') {
-        hideLoading();
-        await fetchSemesters();
-        showStep(step21);
-      } else if (examsemSelect.value === 'exam') {
-        hideLoading();
-        await fetchSemExam();
-        showStep(step22);
-      }
-    });
-    const examForm = document.getElementById('examForm');
-    examForm.addEventListener('submit', async function (e) {
-      e.preventDefault();
-      hideError();
-      const examSemester = document.getElementById('exam').value;
-      if (!examSemester) {
-        showError('Vui lòng chọn học kỳ');
-        return;
-      }
-      showLoading('Đang lấy lịch thi...');
-      try {
-        const response = await fetch('/api/fetch-exam', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ semester: examSemester })
-        });
-        const data = await response.json();
-        if (!response.ok || !data.success) {
-          throw new Error(data.message || 'Không thể lấy lịch thi');
-        }
-        examData = data.data;
-        hideLoading();
-        showStep(step3);
-        document.getElementById('googleCalendarInstructions').style.display = 'block';
-      } catch (error) {
-        console.error('Lỗi lấy lịch thi:', error);
-        hideLoading();
-        showError(error.message || 'Đã xảy ra lỗi khi lấy lịch thi');
-      }
-    });
-    downloadBtn.addEventListener('click', async function () {
-      hideError();
-
-      if (examsemSelect.value === 'schedule' && !scheduleData) {
-        showError('Không có dữ liệu lịch trình nào có sẵn');
-        return;
-      } else if (examsemSelect.value === 'exam' && !examData) {
-        showError('Không có dữ liệu lịch trình nào có sẵn');
-        return;
-      }
-      showLoading('Đang chuẩn bị nhập Google Lịch...');
-
-      try {
-        if (examsemSelect.value === 'schedule' && !scheduleData) {
-          showError('Không có dữ liệu lịch trình nào có sẵn');
-          return;
-        } else if (examsemSelect.value === 'exam' && !examData) {
-          showError('Không có dữ liệu lịch trình nào có sẵn');
-          return;
-        }
-        showLoading('Đang chuẩn bị nhập Google Lịch...');
-
-        // First, get the ICS content
-        const endpoint = examsemSelect.value === 'schedule' ? '/api/generate-ics' : '/api/generate-ics/exam';
-        const data = examsemSelect.value === 'schedule' ? scheduleData : examData;
-        // console.log(JSON.stringify({ data }))
-        // Fetch ICS content
-        const response = await fetch(endpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ data })
-        });
-
-        // console.log(response.data)
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || 'Không tạo được tệp ICS');
-        }
-
-        // Get the blob from the response
-        const blob = await response.blob();
-
-        // Create a download link and trigger download
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.style.display = 'none';
-        a.href = url;
-        a.download = `${examsemSelect.value}_exported.ics`;
-        document.body.appendChild(a);
-        a.click();
-
-        hideLoading();
-      } catch (error) {
-        console.error('Lỗi tạo ICS:', error);
-        hideLoading();
-        showError(error.message || 'Đã xảy ra lỗi khi tạo tệp lịch');
-      }
-    });
-
-    importGoogleBtn.addEventListener('click', async function () {
-      hideError();
-
-      if (examsemSelect.value === 'schedule' && !scheduleData) {
-        showError('Không có dữ liệu lịch trình nào có sẵn');
-        return;
-      } else if (examsemSelect.value === 'exam' && !examData) {
-        showError('Không có dữ liệu lịch trình nào có sẵn');
-        return;
-      }
-      showLoading('Đang chuẩn bị nhập Google Lịch...');
-
-      try {
-        // First, get the ICS content
-        const endpoint = examsemSelect.value === 'schedule' ? '/api/generate-ics' : '/api/generate-ics/exam';
-        const data = examsemSelect.value === 'schedule' ? scheduleData : examData;
-
-        // Fetch ICS content
-        const response = await fetch(endpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ data })
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || 'Không tạo được dữ liệu lịch');
-        }
-
-        const icsContent = await response.text();
-
-        // Download the file first (required for import)
-        const blob = new Blob([icsContent], { type: 'text/calendar' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.style.display = 'none';
-        a.href = url;
-        a.download = `${examsemSelect.value}_exported.ics`;
-        document.body.appendChild(a);
-        a.click();
-        // Parse the ICS content to get events
-        const events = parseEventsFromIcs(icsContent);
-
-        // Direct user to Google Calendar
-        createGoogleCalendarWithIcs();
-
-        hideLoading();
-      } catch (error) {
-        console.error('Lỗi nhập Google Lịch:', error);
-        hideLoading();
-        showError(error.message || 'Đã xảy ra lỗi khi chuẩn bị nhập Google Calendar');
-      }
-    });
-
-    startOverBtn.addEventListener('click', function () {
-      // Reset everything
-      //accessToken = '';
-      scheduleData = null;
-      calendarEvents = [];
-      document.getElementById('username').value = '';
-      document.getElementById('password').value = '';
-      document.getElementById('googleCalendarInstructions').style.display = 'none';
-      hideError();
-      showStep(step1);
-    });
-    document.getElementById('hideInstructionsBtn').addEventListener('click', function () {
-      document.getElementById('googleCalendarInstructions').style.display = 'none';
-    });
-  </script>
+    <script src="./script.js"></script> <!-- Link to JS file -->
 </body>
 <script src="https://kit.fontawesome.com/your-kit-code.js" crossorigin="anonymous"></script>
 <footer style="background: white; padding: 40px 20px; text-align: center;  margin-top: auto;">
-  <div style="display: flex; justify-content: center; gap: 30px; flex-wrap: wrap; margin-bottom: 20px;">
-      <!-- Facebook -->
-      <a href="https://www.facebook.com/minhtanz1" target="_blank" style="text-decoration: none; position: relative;" 
-         onmouseover="this.querySelector('.fb-joke').style.display='block'" 
-         onmouseout="this.querySelector('.fb-joke').style.display='none'">
-          <svg style="width: 2em; height: 2em; color: #0866FF;" viewBox="0 0 24 24">
-              <path fill="currentColor" d="M9.101 23.691v-7.98H6.627v-3.667h2.474v-1.58c0-4.085 1.848-5.978 5.858-5.978.401 0 .955.042 1.468.103a8.68 8.68 0 0 1 1.141.195v3.325a8.623 8.623 0 0 0-.653-.036 26.805 26.805 0 0 0-.733-.009c-.707 0-1.259.096-1.675.309a1.686 1.686 0 0 0-.679.622c-.258.42-.374.995-.374 1.752v1.297h3.919l-.386 2.103-.287 1.564h-3.246v8.245C19.396 23.238 24 18.179 24 12.044c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.628 3.874 10.35 9.101 11.647Z"/>
-          </svg>
-          <span class="fb-joke" style="display: none; position: absolute; top: -30px; left: 50%; transform: translateX(-50%); background: black; color: white; padding: 5px; border-radius: 5px; white-space: nowrap;">
-              Stalk tôi ở đây nhé 😜
-          </span>
-      </a>
+    <div style="display: flex; justify-content: center; gap: 30px; flex-wrap: wrap; margin-bottom: 20px;">
+        <!-- Facebook -->
+        <a href="https://www.facebook.com/minhtanz1" target="_blank" style="text-decoration: none; position: relative;"
+           onmouseover="this.querySelector('.fb-joke').style.display='block'"
+           onmouseout="this.querySelector('.fb-joke').style.display='none'">
+            <svg style="width: 2em; height: 2em; color: #0866FF;" viewBox="0 0 24 24">
+                <path fill="currentColor" d="M9.101 23.691v-7.98H6.627v-3.667h2.474v-1.58c0-4.085 1.848-5.978 5.858-5.978.401 0 .955.042 1.468.103a8.68 8.68 0 0 1 1.141.195v3.325a8.623 8.623 0 0 0-.653-.036 26.805 26.805 0 0 0-.733-.009c-.707 0-1.259.096-1.675.309a1.686 1.686 0 0 0-.679.622c-.258.42-.374.995-.374 1.752v1.297h3.919l-.386 2.103-.287 1.564h-3.246v8.245C19.396 23.238 24 18.179 24 12.044c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.628 3.874 10.35 9.101 11.647Z"/>
+            </svg>
+            <span class="fb-joke" style="display: none; position: absolute; top: -30px; left: 50%; transform: translateX(-50%); background: black; color: white; padding: 5px; border-radius: 5px; white-space: nowrap;">
+                Stalk tôi ở đây nhé 😜
+            </span>
+        </a>
 
-      <!-- Reddit -->
-      <a href="https://www.reddit.com/user/master_minh_tan/" target="_blank" style="text-decoration: none; position: relative;"
-         onmouseover="this.querySelector('.reddit-joke').style.display='block'" 
-         onmouseout="this.querySelector('.reddit-joke').style.display='none'">
-          <svg style="width: 2em; height: 2em; color: #FF4500;" viewBox="0 0 24 24">
-              <path fill="currentColor" d="M12 0C5.373 0 0 5.373 0 12c0 3.314 1.343 6.314 3.515 8.485l-2.286 2.286C.775 23.225 1.097 24 1.738 24H12c6.627 0 12-5.373 12-12S18.627 0 12 0Zm4.388 3.199c1.104 0 1.999.895 1.999 1.999 0 1.105-.895 2-1.999 2-.946 0-1.739-.657-1.947-1.539v.002c-1.147.162-2.032 1.15-2.032 2.341v.007c1.776.067 3.4.567 4.686 1.363.473-.363 1.064-.58 1.707-.58 1.547 0 2.802 1.254 2.802 2.802 0 1.117-.655 2.081-1.601 2.531-.088 3.256-3.637 5.876-7.997 5.876-4.361 0-7.905-2.617-7.998-5.87-.954-.447-1.614-1.415-1.614-2.538 0-1.548 1.255-2.802 2.803-2.802.645 0 1.239.218 1.712.585 1.275-.79 2.881-1.291 4.64-1.365v-.01c0-1.663 1.263-3.034 2.88-3.207.188-.911.993-1.595 1.959-1.595Zm-8.085 8.376c-.784 0-1.459.78-1.506 1.797-.047 1.016.64 1.429 1.426 1.429.786 0 1.371-.369 1.418-1.385.047-1.017-.553-1.841-1.338-1.841Zm7.406 0c-.786 0-1.385.824-1.338 1.841.047 1.017.634 1.385 1.418 1.385.785 0 1.473-.413 1.426-1.429-.046-1.017-.721-1.797-1.506-1.797Zm-3.703 4.013c-.974 0-1.907.048-2.77.135-.147.015-.241.168-.183.305.483 1.154 1.622 1.964 2.953 1.964 1.33 0 2.47-.81 2.953-1.964.057-.137-.037-.29-.184-.305-.863-.087-1.795-.135-2.769-.135Z"/>
-          </svg>
-          <span class="reddit-joke" style="display: none; position: absolute; top: -30px; left: 50%; transform: translateX(-50%); background: black; color: white; padding: 5px; border-radius: 5px; white-space: nowrap;">
-              Lair của Meme Lord 🐸
-          </span>
-      </a>
+        <!-- Reddit -->
+        <a href="https://www.reddit.com/user/master_minh_tan/" target="_blank" style="text-decoration: none; position: relative;"
+           onmouseover="this.querySelector('.reddit-joke').style.display='block'"
+           onmouseout="this.querySelector('.reddit-joke').style.display='none'">
+            <svg style="width: 2em; height: 2em; color: #FF4500;" viewBox="0 0 24 24">
+                <path fill="currentColor" d="M12 0C5.373 0 0 5.373 0 12c0 3.314 1.343 6.314 3.515 8.485l-2.286 2.286C.775 23.225 1.097 24 1.738 24H12c6.627 0 12-5.373 12-12S18.627 0 12 0Zm4.388 3.199c1.104 0 1.999.895 1.999 1.999 0 1.105-.895 2-1.999 2-.946 0-1.739-.657-1.947-1.539v.002c-1.147.162-2.032 1.15-2.032 2.341v.007c1.776.067 3.4.567 4.686 1.363.473-.363 1.064-.58 1.707-.58 1.547 0 2.802 1.254 2.802 2.802 0 1.117-.655 2.081-1.601 2.531-.088 3.256-3.637 5.876-7.997 5.876-4.361 0-7.905-2.617-7.998-5.87-.954-.447-1.614-1.415-1.614-2.538 0-1.548 1.255-2.802 2.803-2.802.645 0 1.239.218 1.712.585 1.275-.79 2.881-1.291 4.64-1.365v-.01c0-1.663 1.263-3.034 2.88-3.207.188-.911.993-1.595 1.959-1.595Zm-8.085 8.376c-.784 0-1.459.78-1.506 1.797-.047 1.016.64 1.429 1.426 1.429.786 0 1.371-.369 1.418-1.385.047-1.017-.553-1.841-1.338-1.841Zm7.406 0c-.786 0-1.385.824-1.338 1.841.047 1.017.634 1.385 1.418 1.385.785 0 1.473-.413 1.426-1.429-.046-1.017-.721-1.797-1.506-1.797Zm-3.703 4.013c-.974 0-1.907.048-2.77.135-.147.015-.241.168-.183.305.483 1.154 1.622 1.964 2.953 1.964 1.33 0 2.47-.81 2.953-1.964.057-.137-.037-.29-.184-.305-.863-.087-1.795-.135-2.769-.135Z"/>
+            </svg>
+            <span class="reddit-joke" style="display: none; position: absolute; top: -30px; left: 50%; transform: translateX(-50%); background: black; color: white; padding: 5px; border-radius: 5px; white-space: nowrap;">
+                Lair của Meme Lord 🐸
+            </span>
+        </a>
 
-      <!-- Threads -->
-      <a href="https://www.threads.net/@minhtanz1" target="_blank" style="text-decoration: none; position: relative;"
-         onmouseover="this.querySelector('.thread-joke').style.display='block'" 
-         onmouseout="this.querySelector('.thread-joke').style.display='none'">
-          <svg style="width: 2em; height: 2em; color: #000000;" viewBox="0 0 24 24">
-              <path fill="currentColor" d="M12.186 24h-.007c-3.581-.024-6.334-1.205-8.184-3.509C2.35 18.44 1.5 15.586 1.472 12.01v-.017c.03-3.579.879-6.43 2.525-8.482C5.845 1.205 8.6.024 12.18 0h.014c2.746.02 5.043.725 6.826 2.098 1.677 1.29 2.858 3.13 3.509 5.467l-2.04.569c-1.104-3.96-3.898-5.984-8.304-6.015-2.91.022-5.11.936-6.54 2.717C4.307 6.504 3.616 8.914 3.589 12c.027 3.086.718 5.496 2.057 7.164 1.43 1.783 3.631 2.698 6.54 2.717 2.623-.02 4.358-.631 5.8-2.045 1.647-1.613 1.618-3.593 1.09-4.798-.31-.71-.873-1.3-1.634-1.75-.192 1.352-.622 2.446-1.284 3.272-.886 1.102-2.14 1.704-3.73 1.79-1.202.065-2.361-.218-3.259-.801-1.063-.689-1.685-1.74-1.752-2.964-.065-1.19.408-2.285 1.33-3.082.88-.76 2.119-1.207 3.583-1.291a13.853 13.853 0 0 1 3.02.142c-.126-.742-.375-1.332-.75-1.757-.513-.586-1.308-.883-2.359-.89h-.029c-.844 0-1.992.232-2.721 1.32L7.734 7.847c.98-1.454 2.568-2.256 4.478-2.256h.044c3.194.02 5.097 1.975 5.287 5.388.108.046.216.094.321.142 1.49.7 2.58 1.761 3.154 3.07.797 1.82.871 4.79-1.548 7.158-1.85 1.81-4.094 2.628-7.277 2.65Zm1.003-11.69c-.242 0-.487.007-.739.021-1.836.103-2.98.946-2.916 2.143.067 1.256 1.452 1.839 2.784 1.767 1.224-.065 2.818-.543 3.086-3.71a10.5 10.5 0 0 0-2.215-.221z"/>
-          </svg>
-          <span class="thread-joke" style="display: none; position: absolute; top: -30px; left: 50%; transform: translateX(-50%); background: black; color: white; padding: 5px; border-radius: 5px; white-space: nowrap;">
-              Chữ ít drama nhiều 🧵
-          </span>
-      </a>
+        <!-- Threads -->
+        <a href="https://www.threads.net/@minhtanz1" target="_blank" style="text-decoration: none; position: relative;"
+           onmouseover="this.querySelector('.thread-joke').style.display='block'"
+           onmouseout="this.querySelector('.thread-joke').style.display='none'">
+            <svg style="width: 2em; height: 2em; color: #000000;" viewBox="0 0 24 24">
+                <path fill="currentColor" d="M12.186 24h-.007c-3.581-.024-6.334-1.205-8.184-3.509C2.35 18.44 1.5 15.586 1.472 12.01v-.017c.03-3.579.879-6.43 2.525-8.482C5.845 1.205 8.6.024 12.18 0h.014c2.746.02 5.043.725 6.826 2.098 1.677 1.29 2.858 3.13 3.509 5.467l-2.04.569c-1.104-3.96-3.898-5.984-8.304-6.015-2.91.022-5.11.936-6.54 2.717C4.307 6.504 3.616 8.914 3.589 12c.027 3.086.718 5.496 2.057 7.164 1.43 1.783 3.631 2.698 6.54 2.717 2.623-.02 4.358-.631 5.8-2.045 1.647-1.613 1.618-3.593 1.09-4.798-.31-.71-.873-1.3-1.634-1.75-.192 1.352-.622 2.446-1.284 3.272-.886 1.102-2.14 1.704-3.73 1.79-1.202.065-2.361-.218-3.259-.801-1.063-.689-1.685-1.74-1.752-2.964-.065-1.19.408-2.285 1.33-3.082.88-.76 2.119-1.207 3.583-1.291a13.853 13.853 0 0 1 3.02.142c-.126-.742-.375-1.332-.75-1.757-.513-.586-1.308-.883-2.359-.89h-.029c-.844 0-1.992.232-2.721 1.32L7.734 7.847c.98-1.454 2.568-2.256 4.478-2.256h.044c3.194.02 5.097 1.975 5.287 5.388.108.046.216.094.321.142 1.49.7 2.58 1.761 3.154 3.07.797 1.82.871 4.79-1.548 7.158-1.85 1.81-4.094 2.628-7.277 2.65Zm1.003-11.69c-.242 0-.487.007-.739.021-1.836.103-2.98.946-2.916 2.143.067 1.256 1.452 1.839 2.784 1.767 1.224-.065 2.818-.543 3.086-3.71a10.5 10.5 0 0 0-2.215-.221z"/>
+            </svg>
+            <span class="thread-joke" style="display: none; position: absolute; top: -30px; left: 50%; transform: translateX(-50%); background: black; color: white; padding: 5px; border-radius: 5px; white-space: nowrap;">
+                Chữ ít drama nhiều 🧵
+            </span>
+        </a>
 
-      <!-- Email -->
-      <a href="mailto:24166094@st.hcmuaf.edu.vn" style="text-decoration: none; position: relative;"
-         onmouseover="this.querySelector('.email-joke').style.display='block'" 
-         onmouseout="this.querySelector('.email-joke').style.display='none'">
-          <svg style="width: 2em; height: 2em; color: #EA4335;" viewBox="0 0 24 24">
-              <path fill="currentColor" d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-2.023 2.309-3.178 3.927-1.964L5.455 4.64 12 9.548l6.545-4.91 1.528-1.145C21.69 2.28 24 3.434 24 5.457z"/>
-          </svg>
-          <span class="email-joke" style="display: none; position: absolute; top: -30px; left: 50%; transform: translateX(-50%); background: black; color: white; padding: 5px; border-radius: 5px; white-space: nowrap;">
-              DM kiểu cổ điển 📨
-          </span>
-      </a>
-  </div>
+        <!-- Email -->
+        <a href="mailto:24166094@st.hcmuaf.edu.vn" style="text-decoration: none; position: relative;"
+           onmouseover="this.querySelector('.email-joke').style.display='block'"
+           onmouseout="this.querySelector('.email-joke').style.display='none'">
+            <svg style="width: 2em; height: 2em; color: #EA4335;" viewBox="0 0 24 24">
+                <path fill="currentColor" d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-2.023 2.309-3.178 3.927-1.964L5.455 4.64 12 9.548l6.545-4.91 1.528-1.145C21.69 2.28 24 3.434 24 5.457z"/>
+            </svg>
+            <span class="email-joke" style="display: none; position: absolute; top: -30px; left: 50%; transform: translateX(-50%); background: black; color: white; padding: 5px; border-radius: 5px; white-space: nowrap;">
+                DM kiểu cổ điển 📨
+            </span>
+        </a>
+    </div>
 
-  <p style="color: black; margin-top: 30px; font-size: 1em;">
-      "Liên lạc gì cũng được, trừ gọi điện lúc 2h sáng 😴<br>
-      Email: 24166094@st.hcmuaf.edu.vn (không nhận spam 🚫🍖)"
-  </p>
+    <p style="color: black; margin-top: 30px; font-size: 1em;">
+        "Liên lạc gì cũng được, trừ gọi điện lúc 2h sáng 😴<br>
+        Email: 24166094@st.hcmuaf.edu.vn (không nhận spam 🚫🍖)"
+    </p>
 </footer>
 
 </html>
