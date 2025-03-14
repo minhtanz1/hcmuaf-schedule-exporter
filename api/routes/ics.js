@@ -20,23 +20,39 @@ router.post('/generate-ics', (req, res) => {
         const periods = {};
         scheduleData.data.data.ds_tiet_trong_ngay.forEach(tiet => {
             if (tiet.gio_bat_dau) {
-                periods[tiet.tiet] = [tiet.gio_bat_dau, tiet.gio_ket_thuc];
+                periods[tiet.tiet] = {
+                    start: tiet.gio_bat_dau,
+                    duration: tiet.so_phut
+                };
             }
         });
-
+        console.log(periods)
+        const addMinutes = (time, minutes) => {
+            const [hours, mins] = time.split(':').map(Number);
+            const date = new Date();
+            date.setHours(hours, mins + minutes);
+            return date.toTimeString().slice(0, 5);
+        };
         // Iterate through weeks
         scheduleData.data.data.ds_tuan_tkb.forEach(week => {
             // Iterate through scheduled classes
             week.ds_thoi_khoa_bieu.forEach(lesson => {
                 const lessonDateStr = strftime('%Y-%m-%d', new Date(lesson.ngay_hoc.split('T')[0])); // "YYYY-MM-DD"
-
+                
+                const startPeriod = lesson.tiet_bat_dau;
+                const numPeriods = lesson.so_tiet;
                 // Get start and end times from the periods object (defaults to "00:00" if not found)
-                const [startTime, endTime] = periods[lesson.tiet_bat_dau] || ['00:00', '00:00'];
-
+                let startTime = periods[startPeriod]?.start || '00:00';
+                let totalMinutes = 0;
+                
+                for (let i = 0; i < numPeriods-1; i++) {
+                    totalMinutes += periods[startPeriod + i]?.duration || 0;
+                }
+                const endTime = addMinutes(startTime, totalMinutes);
                 // Create Date objects by combining the lesson date and the time strings.
                 const startDate = `${lessonDateStr}T${startTime}:00`;
                 const endDate = `${lessonDateStr}T${endTime}:00`;
-
+                console.log(endTime)
                 // Add event to calendar
                 calendar.createEvent({
                     start: startDate,
