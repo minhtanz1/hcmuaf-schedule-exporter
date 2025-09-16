@@ -17,7 +17,7 @@
         "dotenv": "^17.2.2",
         "express": "^5.1.0",
         "express-session": "^1.18.2",
-        "ical-generator": "^9.0.0",
+        "ical-generator": "^3.6.0",
         "strftime": "^0.10.3",
         "vercel": "^41.0.2",
         "yarn": "^1.22.22"

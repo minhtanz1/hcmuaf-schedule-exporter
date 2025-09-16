@@ -26,7 +26,7 @@ router.post('/generate-ics', (req, res) => {
                 };
             }
         });
-        console.log(periods)
+
         const addMinutes = (time, minutes) => {
             const [hours, mins] = time.split(':').map(Number);
             const date = new Date();
@@ -52,7 +52,6 @@ router.post('/generate-ics', (req, res) => {
                 // Create Date objects by combining the lesson date and the time strings.
                 const startDate = `${lessonDateStr}T${startTime}:00`;
                 const endDate = `${lessonDateStr}T${endTime}:00`;
-                console.log(endTime)
                 // Add event to calendar
                 calendar.createEvent({
                     start: startDate,
