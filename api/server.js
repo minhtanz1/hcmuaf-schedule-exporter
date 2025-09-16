@@ -15,8 +15,13 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+
 // Middleware
-app.use(cors());
+app.use(cors({
+    origin: true, // Allow all origins in development
+    credentials: true // Allow cookies
+}));
+app.use(express.json());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, '../public'))); // Serve static files from 'public' directory
@@ -36,7 +41,6 @@ app.use(routePrefix, authRoutes);
 app.use(routePrefix, scheduleRoutes);
 app.use(routePrefix, examRoutes);
 app.use(routePrefix, icsRoutes);
-
 // Serve index.html for root path
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '../public', 'index.html'));

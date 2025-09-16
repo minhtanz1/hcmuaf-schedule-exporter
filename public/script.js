@@ -17,7 +17,7 @@ const step2 = document.getElementById('step2');
 const step21 = document.getElementById('step21');
 const step22 = document.getElementById('step22');
 const step3 = document.getElementById('step3');
-const loginForm = document.getElementById('loginForm');
+// const loginForm = document.getElementById('loginForm');
 const semesterForm = document.getElementById('semesterForm');
 const examsemSelect = document.getElementById('examsem');
 const downloadBtn = document.getElementById('downloadBtn');
@@ -54,6 +54,92 @@ function showError(message) {
 function hideError() {
     errorEl.style.display = 'none';
 }
+async function setAccessTokenCookie(token) {
+    try {
+        const response = await fetch('/api/set-access-token', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ access_token: token }) 
+        });
+        // First check if response is ok
+        if (!response.ok) {
+            const errorText = await response.text();
+            let errorMessage;
+            
+            try {
+                const errorJson = JSON.parse(errorText);
+                errorMessage = errorJson.message;
+            } catch (e) {
+                errorMessage = `Server error (${response.status}): ${response.statusText}`;
+            }
+            
+            throw new Error(errorMessage);
+        }
+
+        const data = await response.json();
+        console.log(data);
+        if (!data.success) {
+            throw new Error(data.message || 'Could not set Access Token');
+        }
+
+        return true;
+    } catch (error) {
+        console.error('Error setting Access Token:', error);
+        showError(error.message || 'Error setting token. Please try again.');
+        return false;
+    }
+}
+document.addEventListener('DOMContentLoaded', () => {
+    showStep(step1);
+});
+
+manualTokenForm.addEventListener('submit', async function (e) {
+    e.preventDefault();
+    hideError();
+
+    const rawToken = accessTokenInput.value.trim();
+    if (!rawToken) {
+        showError('Vui lòng dán Access Token vào đây.');
+        return;
+    }
+
+    let accessToken = rawToken;
+
+    if (rawToken.startsWith('{') && rawToken.endsWith('}')) {
+        try {
+            const parsed = JSON.parse(rawToken);
+            if (parsed.access_token) {
+                accessToken = parsed.access_token;
+            } else {
+                showError('Chuỗi JSON không chứa "access_token". Vui lòng kiểm tra lại.');
+                return;
+            }
+        } catch (parseError) {
+            showError('Định dạng token không hợp lệ. Vui lòng dán chính xác giá trị của "access_token" hoặc cả chuỗi JSON nếu có.');
+            return;
+        }
+    }
+
+
+    showLoading('Đang xử lý Access Token...');
+    const cookieSet = await setAccessTokenCookie(accessToken);
+
+    if (cookieSet) {
+        hideLoading();
+        showStep(step2);
+    } else {
+        hideLoading();
+    }
+});
+
+document.getElementById('examsemForm').addEventListener('submit', function (event) {
+    event.preventDefault();
+    const examsemLabel = document.querySelector('#examsem').selectedOptions[0].label;
+    document.getElementById('step3Message').textContent = `${examsemLabel} của bạn đã được lấy thành công!`;
+});
+
 async function fetchSemesters() {
     hideError();
     showLoading('Đang tìm kiếm các học kỳ có sẵn...');
@@ -272,45 +358,45 @@ function createGoogleCalendarWithIcs() {
 }
 
 // Event handlers
-loginForm.addEventListener('submit', async function (e) {
-    e.preventDefault();
-    hideError();
+// loginForm.addEventListener('submit', async function (e) {
+//     e.preventDefault();
+//     hideError();
 
-    const username = document.getElementById('username').value;
-    const password = document.getElementById('password').value;
+//     const username = document.getElementById('username').value;
+//     const password = document.getElementById('password').value;
 
-    if (!username || !password) {
-        showError('Vui lòng nhập cả tên người dùng và mật khẩu');
-        return;
-    }
+//     if (!username || !password) {
+//         showError('Vui lòng nhập cả tên người dùng và mật khẩu');
+//         return;
+//     }
 
-    showLoading('Đang đăng nhập...');
+//     showLoading('Đang đăng nhập...');
 
-    try {
-        const response = await fetch('/api/login', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ username, password })
-        });
+//     try {
+//         const response = await fetch('/api/login', {
+//             method: 'POST',
+//             headers: {
+//                 'Content-Type': 'application/json'
+//             },
+//             body: JSON.stringify({ username, password })
+//         });
 
-        const data = await response.json();
+//         const data = await response.json();
 
-        if (!response.ok || !data.success) {
-            throw new Error(data.message || 'Đăng nhập không thành công. Vui lòng kiểm tra thông tin đăng nhập của bạn.');
-        }
+//         if (!response.ok || !data.success) {
+//             throw new Error(data.message || 'Đăng nhập không thành công. Vui lòng kiểm tra thông tin đăng nhập của bạn.');
+//         }
 
-        //accessToken = data.access_token;
-        hideLoading();
+//         //accessToken = data.access_token;
+//         hideLoading();
 
-        showStep(step2);
-    } catch (error) {
-        console.error('Lỗi đăng nhập:', error);
-        hideLoading();
-        showError(error.message || 'Đã xảy ra lỗi trong quá trình đăng nhập');
-    }
-});
+//         showStep(step2);
+//     } catch (error) {
+//         console.error('Lỗi đăng nhập:', error);
+//         hideLoading();
+//         showError(error.message || 'Đã xảy ra lỗi trong quá trình đăng nhập');
+//     }
+// });
 
 semesterForm.addEventListener('submit', async function (e) {
     e.preventDefault();
